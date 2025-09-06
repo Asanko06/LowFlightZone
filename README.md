@@ -2,11 +2,6 @@
 
 **Умное табло аэропорта с прогнозированием задержек рейсов и персональными рекомендациями.**
 
-[![Status](https://img.shields.io/badge/status-in%20development-yellow)](https://github.com/your_username/AeroInsight)
-[![License](https://img.shields.io/badge/license-MIT-blue)](https://github.com/your_username/AeroInsight/blob/main/LICENSE)
-
-![AeroInsight Mockup](docs/mockups/main-mockup.png) <!-- Если добавите обложку -->
-
 ## 🚀 О проекте
 
 AeroInsight — это не просто еще одно табло вылетов и прилетов. Это интеллектуальный помощник для пассажиров, встречающих и таксистов, который:
