@@ -111,19 +111,19 @@
 
 
 ## Страница аутентификации:
-<img width="284" height="554" alt="Снимок экрана 2025-09-06 222022" src="https://github.com/user-attachments/assets/07f0f252-dd31-4df2-a687-4d892761d30f" />
+<img width="205" height="400" alt="Снимок экрана 2025-09-06 222022" src="https://github.com/user-attachments/assets/07f0f252-dd31-4df2-a687-4d892761d30f" />
 
 
 ## Главная страница:
-<img width="550" height="1079" alt="Снимок экрана 2025-09-06 222112 — копия" src="https://github.com/user-attachments/assets/cafbe9e6-2a28-47d9-bbfe-9c9820d512f0" />
+<img width="205" height="400" alt="Снимок экрана 2025-09-06 222112 — копия" src="https://github.com/user-attachments/assets/cafbe9e6-2a28-47d9-bbfe-9c9820d512f0" />
 
 
 ## Страница навигации по аэропорту:
-<img width="552" height="1079" alt="Снимок экрана 2025-09-06 222137" src="https://github.com/user-attachments/assets/10b0569f-3005-4f8a-9dc3-d8c24ad290b2" />
+<img width="205" height="400" alt="Снимок экрана 2025-09-06 222137" src="https://github.com/user-attachments/assets/10b0569f-3005-4f8a-9dc3-d8c24ad290b2" />
 
 
 ## Страница расчета времени выезда:
-<img width="566" height="1079" alt="Снимок экрана 2025-09-06 222204" src="https://github.com/user-attachments/assets/3a47c143-b917-463b-a573-0c7733d250cb" />
+<img width="205" height="400" alt="Снимок экрана 2025-09-06 222204" src="https://github.com/user-attachments/assets/3a47c143-b917-463b-a573-0c7733d250cb" />
 
 
 
@@ -263,4 +263,5 @@
 –  Функциональность и производительность системы могут снижаться при отсутствии стабильного интернет-соединения на стороне пользователя.
 
 –  Реализация push-уведомлений для iOS зависит от правил Apple App Store (веб-пуши могут иметь ограниченную функциональность по сравнению с нативными приложениями).
+
 
