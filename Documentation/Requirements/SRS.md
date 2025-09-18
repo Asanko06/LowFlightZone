@@ -115,7 +115,8 @@
 
 
 ## Главная страница:
-<img width="205" height="400" alt="Снимок экрана 2025-09-06 222112 — копия" src="https://github.com/user-attachments/assets/cafbe9e6-2a28-47d9-bbfe-9c9820d512f0" />
+<img width="205" height="400" alt="Снимок экрана 2025-09-18 183336" src="https://github.com/user-attachments/assets/768efe75-0971-493a-aeb5-5273685ab4e8" />
+
 
 
 ## Страница навигации по аэропорту:
