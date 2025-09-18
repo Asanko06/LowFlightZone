@@ -127,7 +127,8 @@
 <img width="205" height="400" alt="Снимок экрана 2025-09-06 222204" src="https://github.com/user-attachments/assets/3a47c143-b917-463b-a573-0c7733d250cb" />
 
 ## Push-уведомление об изменении информации о рейсе:
-<img width="205" height="400" alt="Снимок экрана 2025-09-18 194313" src="https://github.com/user-attachments/assets/2ca6583d-9a32-47c4-b688-605f23614965" />
+<img width="205" height="400" alt="endpho1" src="https://github.com/user-attachments/assets/1fe5039e-3355-48d3-8dfa-3b9c8ca5e6fc" />
+
 
 
 ## 2.3 Характеристика пользователя
