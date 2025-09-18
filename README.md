@@ -10,9 +10,9 @@ Operation system: Android
 Language: Java.  
 Interface language: JavaScript.
 
-[SRS of program](https://github.com/Asanko06/LowFlightZone/blob/main/Requirements/SRS.md) 
+[SRS of program](https://github.com/Asanko06/LowFlightZone/blob/main/Documentation/Requirements/SRS.md) 
 
-[User interface images](https://github.com/Asanko06/LowFlightZone/tree/main/Mockups)
+[User interface images](https://github.com/Asanko06/LowFlightZone/tree/main/Documentation/Mockups)
 
 Diagrams
 
