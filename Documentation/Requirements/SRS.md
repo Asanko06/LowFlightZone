@@ -126,6 +126,8 @@
 ## Страница расчета времени выезда:
 <img width="205" height="400" alt="Снимок экрана 2025-09-06 222204" src="https://github.com/user-attachments/assets/3a47c143-b917-463b-a573-0c7733d250cb" />
 
+## Страница расчета времени выезда:
+<img width="205" height="400" alt="Снимок экрана 2025-09-18 194313" src="https://github.com/user-attachments/assets/2ca6583d-9a32-47c4-b688-605f23614965" />
 
 
 ## 2.3 Характеристика пользователя
