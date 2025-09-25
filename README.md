@@ -5,8 +5,6 @@ LowFlightZone is not just another departures and arrivals board. It is an intell
 
 ## About project
 
-Operation system: Android  
-
 Language: Java.  
 Interface language: JavaScript.
 
