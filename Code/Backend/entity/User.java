@@ -19,6 +19,9 @@ public class User {
     @Column(name = "email", unique = true, nullable = false, length = 100)
     private String email;
 
+    @Column(name = "password", nullable = false, length = 100)
+    private String password;
+
     @Column(name = "first_name", length = 50)
     private String firstName;
 
@@ -34,10 +37,8 @@ public class User {
     @Column(name = "created_at")
     private LocalDateTime createdAt;
 
-    // Связь с подписками (One-to-Many)
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<FlightSubscription> subscriptions = new ArrayList<>();
-
 
     @PrePersist
     protected void onCreate() {

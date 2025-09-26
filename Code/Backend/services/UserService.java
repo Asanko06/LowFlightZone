@@ -5,6 +5,7 @@ import com.example.lowflightzone.dto.UserDto;
 import com.example.lowflightzone.entity.User;
 import com.example.lowflightzone.exceptions.UserException;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -13,11 +14,13 @@ import java.util.stream.Collectors;
 public class UserService {
 
     private final UserDao userDao;
+    private final PasswordEncoder passwordEncoder;
     private final FlightSubscriptionService subscriptionService;
 
     @Autowired
-    public UserService(UserDao userDao, FlightSubscriptionService subscriptionService) {
+    public UserService(UserDao userDao, FlightSubscriptionService subscriptionService, PasswordEncoder passwordEncoder) {
         this.userDao = userDao;
+        this.passwordEncoder = passwordEncoder;
         this.subscriptionService = subscriptionService;
     }
 
@@ -45,6 +48,8 @@ public class UserService {
         }
 
         User user = convertToEntity(userDto);
+        user.setPassword(passwordEncoder.encode(userDto.getPassword())); // добавляем эту строку
+
         User savedUser = userDao.save(user);
         return convertToDto(savedUser);
     }
