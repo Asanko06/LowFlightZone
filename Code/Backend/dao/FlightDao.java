@@ -31,14 +31,14 @@ public class FlightDao {
     }
 
     public List<Flight> findByDepartureAirport(String airport) {
-        return flightRepository.findByDepartureAirport(airport);
+        return flightRepository.findByDepartureAirport_IataCode(airport);
     }
 
     public List<Flight> findByArrivalAirport(String airport) {
-        return flightRepository.findByArrivalAirport(airport);
+        return flightRepository.findByArrivalAirport_IataCode(airport);
     }
 
-    public List<Flight> findByStatus(String status) {
+    public List<Flight> findByStatus(Flight.FlightStatus status) {
         return flightRepository.findByStatus(status);
     }
 

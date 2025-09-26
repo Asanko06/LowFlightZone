@@ -8,14 +8,14 @@ import java.time.LocalDateTime;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @Getter
 @Setter
-public class FlightDto {
+public class FlightSubscriptionDto {
     private Integer id;
-    private String flightNumber;
-    private String airline;
-    private String departureAirport;
-    private String arrivalAirport;
-    private LocalDateTime scheduledDeparture;
+    private FlightDto flight;
+    private UserDto user; // уже есть
+    private String notificationTypes;
     private String status;
-    private Integer delayMinutes;
     private LocalDateTime createdAt;
+    private LocalDateTime lastNotifiedAt;
+    private Integer notifyBeforeHours;
+    private Integer minDelayMinutes;
 }
