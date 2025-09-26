@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
+import airplaneImage from '../assets/plane.png';
 
 const LoginPage = () => {
+    const [isLogin, setIsLogin] = useState(true);
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
-    const [isLogin, setIsLogin] = useState(true);
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
 
@@ -30,105 +31,278 @@ const LoginPage = () => {
         setLoading(false);
     };
 
+    const handleFormSubmit = (isLoginForm) => {
+        setIsLogin(isLoginForm);
+        if (email && password) {
+            handleSubmit({ preventDefault: () => {} });
+        }
+    };
+
     return (
         <div style={containerStyle}>
-            <div style={formContainerStyle}>
-                <h2>{isLogin ? 'Вход в систему' : 'Регистрация'}</h2>
+            {/* Верхняя синяя секция */}
+            <div style={topSectionStyle}>
+                <div style={contentWrapperStyle}>
+                    <h1 style={welcomeTextStyle}>Welcome to</h1>
+                    <h1 style={appNameStyle}>LowFlightZone</h1>
 
-                {error && <div style={errorStyle}>{error}</div>}
+                    {/* Место для картинки самолета */}
+                    <div style={airplaneContainerStyle}>
+                        <div style={airplaneContainerStyle}>
+                            <img
+                                src={airplaneImage}
+                                alt="Airplane"
+                                style={airplaneImageStyle}
+                            />
+                        </div>
+                    </div>
+                </div>
 
-                <form onSubmit={handleSubmit} style={formStyle}>
-                    <input
-                        type="email"
-                        placeholder="Email"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        style={inputStyle}
-                        required
-                    />
-                    <input
-                        type="password"
-                        placeholder="Пароль"
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        style={inputStyle}
-                        required
-                    />
+                {/* Множественные дуги: голубая-белая, голубая-белая */}
+                <div style={arcsContainerStyle}>
+                    <div style={whiteArc1Style}></div>
+                    <div style={blueArc1Style}></div>
+                    <div style={whiteArc2Style}></div>
+                    <div style={blueArc2Style}></div>
+                    <div style={blueArc0Style}></div>
+                </div>
+            </div>
+
+            {/* Нижняя белая секция */}
+            <div style={bottomSectionStyle}>
+                <div style={bottomContentStyle}>
+                    {error && <div style={errorStyle}>{error}</div>}
+
+                    {/* Форма для входа/регистрации */}
+                    <div style={formContainerStyle}>
+                        <input
+                            type="email"
+                            placeholder="Email"
+                            value={email}
+                            onChange={(e) => setEmail(e.target.value)}
+                            style={inputStyle}
+                        />
+                        <input
+                            type="password"
+                            placeholder="Password"
+                            value={password}
+                            onChange={(e) => setPassword(e.target.value)}
+                            style={inputStyle}
+                        />
+                    </div>
+
+                    {/* Кнопка Log In */}
                     <button
-                        type="submit"
+                        onClick={() => handleFormSubmit(true)}
                         disabled={loading}
-                        style={buttonStyle}
+                        style={loginButtonStyle}
                     >
-                        {loading ? 'Загрузка...' : (isLogin ? 'Войти' : 'Зарегистрироваться')}
+                        {loading ? 'Loading...' : 'Log in'}
                     </button>
-                </form>
 
-                <button
-                    onClick={() => setIsLogin(!isLogin)}
-                    style={toggleButtonStyle}
-                >
-                    {isLogin ? 'Нет аккаунта? Зарегистрироваться' : 'Уже есть аккаунт? Войти'}
-                </button>
+                    {/* Кнопка Sign Up */}
+                    <button
+                        onClick={() => handleFormSubmit(false)}
+                        disabled={loading}
+                        style={signupButtonStyle}
+                    >
+                        Sign up
+                    </button>
+
+                    {/* Ссылка внизу */}
+                    <button style={helpLinkStyle}>
+                        Not able to login? Try here
+                    </button>
+                </div>
             </div>
         </div>
     );
 };
 
+// Стили
+const airplaneImageStyle = {
+    width: '200px',
+    height: 'auto',
+    maxWidth: '100%',
+};
+
 const containerStyle = {
+    minHeight: '100vh',
     display: 'flex',
-    justifyContent: 'center',
+    flexDirection: 'column',
+    fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+};
+
+const topSectionStyle = {
+    flex: '1',
+    backgroundColor: '#7EBFFF',
+    position: 'relative',
+    display: 'flex',
     alignItems: 'center',
-    minHeight: '80vh',
-    padding: '2rem'
+    justifyContent: 'center',
+    overflow: 'hidden',
+};
+
+const contentWrapperStyle = {
+    textAlign: 'center',
+    color: 'white',
+    zIndex: 2,
+    position: 'relative',
+    marginBottom: '60px', // Отступ для дуг
+};
+
+const welcomeTextStyle = {
+    fontSize: '2rem',
+    fontWeight: '300',
+    color: '#575757',
+    margin: '0',
+    marginTop: '3rem',
+    opacity: '0.9',
+};
+
+const appNameStyle = {
+    fontSize: '3.5rem',
+    fontWeight: '700',
+    color: 'black',
+    margin: '0',
+    marginBottom: '3rem',
+};
+
+const airplaneContainerStyle = {
+    marginTop: '2rem',
+    position: 'relative',
+    bottom: '10px',
+    left: '50%',
+    transform: 'translateX(-50%)',
+    overflow: 'hidden',
+    zIndex: 10,
+};
+
+// Контейнер для дуг
+const arcsContainerStyle = {
+    position: 'absolute',
+    bottom: '-120px', // опускаем дуги ниже, чтобы они не заезжали на самолёт
+    left: 0,
+    right: 0,
+    height: '200px', // больше места под плавный переход
+    overflow: 'hidden',
+};
+
+// Функция для дуги
+const arcStyle = (color, bottom, padding, zIndex) => ({
+    position: 'absolute',
+    left: '50%',
+    transform: 'translateX(-50%)', // центрируем
+    //right: padding,
+    bottom: bottom,
+    width: '150%', // шире экрана
+    height: '300%', // высота овала
+    borderRadius: '200% / 100%',
+    backgroundColor: color,
+    zIndex,
+});
+
+// Дуги (снизу вверх)
+const blueArc1Style = arcStyle('#7EBFFF', -10, 0, 1);
+const whiteArc1Style = arcStyle('white', 0, 5, 2);
+const blueArc2Style = arcStyle('#7EBFFF', 120, 10, 3);
+const whiteArc2Style = arcStyle('white', 130, 15, 4); // эта белая сольётся с нижним блоком
+const blueArc0Style = arcStyle('#7EBFFF', 140, 10, 5);
+
+const bottomSectionStyle = {
+    flex: '1',
+    backgroundColor: 'white',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: '2rem 1rem',
+};
+
+const bottomContentStyle = {
+    width: '100%',
+    maxWidth: '400px',
+    textAlign: 'center',
 };
 
 const formContainerStyle = {
-    backgroundColor: '#f8f9fa',
-    padding: '2rem',
-    borderRadius: '8px',
-    boxShadow: '0 2px 10px rgba(0,0,0,0.1)',
-    width: '100%',
-    maxWidth: '400px'
-};
-
-const formStyle = {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '1rem'
+    marginBottom: '2rem',
 };
 
 const inputStyle = {
-    padding: '0.75rem',
+    width: '100%',
+    padding: '1rem',
+    marginBottom: '1rem',
     border: '1px solid #ddd',
-    borderRadius: '4px',
-    fontSize: '1rem'
-};
-
-const buttonStyle = {
-    padding: '0.75rem',
-    backgroundColor: '#3498db',
-    color: 'white',
-    border: 'none',
-    borderRadius: '4px',
+    borderRadius: '8px',
     fontSize: '1rem',
-    cursor: 'pointer'
+    outline: 'none',
 };
 
-const toggleButtonStyle = {
-    background: 'none',
+const loginButtonStyle = {
+    width: '100%',
+    padding: '1rem',
+    backgroundColor: '#7EBFFF',
+    color: 'black',
     border: 'none',
-    color: '#3498db',
+    borderRadius: '8px',
+    fontSize: '1.1rem',
+    fontWeight: '600',
     cursor: 'pointer',
-    marginTop: '1rem',
-    textDecoration: 'underline'
+    marginBottom: '1rem',
+    transition: 'background-color 0.3s ease',
+};
+
+const signupButtonStyle = {
+    width: '100%',
+    padding: '1rem',
+    backgroundColor: 'transparent',
+    color: '#7F7F7F',
+    border: 'none',
+    borderRadius: '8px',
+    fontSize: '1.1rem',
+    fontWeight: '600',
+    cursor: 'pointer',
+    marginBottom: '2rem',
+    transition: 'color 0.3s ease',
+};
+
+const helpLinkStyle = {
+    backgroundColor: 'transparent',
+    border: 'none',
+    color: '#7EBFFF',
+    cursor: 'pointer',
+    fontSize: '0.9rem',
+    textDecoration: 'underline',
 };
 
 const errorStyle = {
-    color: '#e74c3c',
-    backgroundColor: '#fadbd8',
-    padding: '0.75rem',
-    borderRadius: '4px',
-    marginBottom: '1rem'
+    color: '#ff4444',
+    backgroundColor: '#ffe6e6',
+    padding: '1rem',
+    borderRadius: '8px',
+    marginBottom: '1rem',
+    fontSize: '0.9rem',
 };
+
+// Добавляем hover эффекты
+const styleSheet = document.styleSheets[0];
+styleSheet.insertRule(`
+  input:focus {
+    border-color: #7EBFFF;
+  }
+`, styleSheet.cssRules.length);
+
+styleSheet.insertRule(`
+  button:hover {
+    opacity: 0.9;
+  }
+`, styleSheet.cssRules.length);
+
+styleSheet.insertRule(`
+  button:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+`, styleSheet.cssRules.length);
 
 export default LoginPage;

@@ -4,74 +4,90 @@
   box-sizing: border-box;
 }
 
+:root {
+  --primary-bg: #0a0e17;
+  --secondary-bg: #1a1f2e;
+  --card-bg: #1e293b;
+  --accent-blue: #3b82f6;
+  --accent-green: #10b981;
+  --accent-red: #ef4444;
+  --accent-yellow: #f59e0b;
+  --text-primary: #ffffff;
+  --text-secondary: #94a3b8;
+  --text-muted: #64748b;
+  --border-color: #334155;
+  --gradient-primary: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
 body {
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+  background-color: var(--primary-bg);
+  color: var(--text-primary);
   line-height: 1.6;
-  color: #333;
-  background-color: #f4f6f7;
+  min-height: 100vh;
 }
 
 .App {
   min-height: 100vh;
+  background: var(--primary-bg);
 }
 
-main {
-  min-height: calc(100vh - 80px);
-}
-
-.error {
-  color: #e74c3c;
-  background-color: #fadbd8;
-  padding: 1rem;
-  border-radius: 4px;
-  margin: 1rem 0;
-}
-
-.loading {
-  text-align: center;
-  padding: 2rem;
-  font-size: 1.2rem;
-}
-
-/* Стили для карточек */
+/* Общие стили для карточек */
 .card {
-  background: white;
-  border-radius: 8px;
+  background: var(--card-bg);
+  border-radius: 20px;
   padding: 1.5rem;
   margin: 1rem 0;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-  transition: transform 0.2s;
+  border: 1px solid var(--border-color);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
 }
 
-.card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 8px rgba(0,0,0,0.15);
-}
-
-/* Стили для кнопок */
+/* Кнопки */
 .btn {
-  padding: 0.75rem 1.5rem;
+  padding: 1rem 2rem;
   border: none;
-  border-radius: 4px;
+  border-radius: 12px;
+  font-size: 1.1rem;
+  font-weight: 600;
   cursor: pointer;
-  font-size: 1rem;
-  transition: background-color 0.3s;
+  transition: all 0.3s ease;
+  text-decoration: none;
+  display: inline-block;
+  text-align: center;
 }
 
 .btn-primary {
-  background-color: #3498db;
+  background: var(--gradient-primary);
   color: white;
 }
 
-.btn-primary:hover {
-  background-color: #2980b9;
+.btn-secondary {
+  background: var(--secondary-bg);
+  color: var(--text-primary);
+  border: 2px solid var(--border-color);
 }
 
-.btn-danger {
-  background-color: #e74c3c;
-  color: white;
+/* Текст */
+.text-center {
+  text-align: center;
 }
 
-.btn-danger:hover {
-  background-color: #c0392b;
+.text-muted {
+  color: var(--text-muted);
+}
+
+/* Status badges */
+.status-delayed {
+  color: var(--accent-red);
+  font-weight: 600;
+}
+
+.status-on-time {
+  color: var(--accent-green);
+  font-weight: 600;
+}
+
+.status-boarding {
+  color: var(--accent-yellow);
+  font-weight: 600;
 }
