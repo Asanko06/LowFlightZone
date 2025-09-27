@@ -1,173 +1,109 @@
 import React from 'react';
-import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import { useNavigate } from 'react-router-dom';
 
 const Header = () => {
-    const { currentUser, logout, isAuthenticated } = useAuth();
+    const { currentUser, logout } = useAuth();
     const navigate = useNavigate();
-    const location = useLocation();
 
     const handleLogout = () => {
         logout();
         navigate('/login');
     };
 
-    const isActive = (path) => {
-        return location.pathname === path ? 'nav-link active' : 'nav-link';
-    };
-
     return (
         <header style={headerStyle}>
-            <div style={containerStyle}>
-                <div style={logoStyle}>
-                    <Link to="/" style={logoLinkStyle}>
-                        <span style={logoIcon}>✈️</span>
-                        LowFlightZone
-                    </Link>
+            {/* Бургер-меню слева */}
+            <button style={menuButtonStyle}>
+                <div style={menuIconStyle}>
+                    <span style={menuBarStyle}></span>
+                    <span style={menuBarStyle}></span>
+                    <span style={menuBarStyle}></span>
                 </div>
+            </button>
 
-                {isAuthenticated ? (
-                    <nav style={navStyle}>
-                        <Link to="/" className={isActive('/')} style={navLinkStyle}>
-                            <span style={navIcon}>🏠</span>
-                            Главная
-                        </Link>
-                        <Link to="/flights" className={isActive('/flights')} style={navLinkStyle}>
-                            <span style={navIcon}>📊</span>
-                            Рейсы
-                        </Link>
-                        <Link to="/search" className={isActive('/search')} style={navLinkStyle}>
-                            <span style={navIcon}>🔍</span>
-                            Поиск
-                        </Link>
-                        <Link to="/subscriptions" className={isActive('/subscriptions')} style={navLinkStyle}>
-                            <span style={navIcon}>🔔</span>
-                            Подписки
-                        </Link>
-
-                        <div style={userSectionStyle}>
-                            <span style={userGreeting}>👋 Привет, {currentUser?.email?.split('@')[0]}</span>
-                            <button onClick={handleLogout} style={logoutBtnStyle}>
-                                Выйти
-                            </button>
-                        </div>
-                    </nav>
-                ) : (
-                    <div style={authSectionStyle}>
-                        <Link to="/login" style={authLinkStyle}>
-                            Войти
-                        </Link>
-                    </div>
-                )}
+            {/* Местоположение по центру */}
+            <div style={locationStyle}>
+                <div style={locationIconStyle}>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="#7EBFFF">
+                        <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
+                    </svg>
+                </div>
+                <span style={cityTextStyle}>Moscow</span>
             </div>
+
+            {/* Иконка профиля справа */}
+            <button style={profileButtonStyle}>
+                <div style={profileIconStyle}>
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="#7EBFFF">
+                        <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
+                    </svg>
+                </div>
+            </button>
         </header>
     );
 };
 
 const headerStyle = {
-    background: 'var(--secondary-bg)',
-    borderBottom: '1px solid var(--border-color)',
-    padding: '1rem 0',
+    backgroundColor: 'white',
+    borderBottom: '1px solid #e0e0e0',
+    padding: '1rem',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
     position: 'sticky',
     top: 0,
     zIndex: 1000,
+    boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
 };
 
-const containerStyle = {
-    maxWidth: '1200px',
-    margin: '0 auto',
-    padding: '0 1rem',
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-};
-
-const logoStyle = {
-    fontSize: '1.5rem',
-    fontWeight: 'bold',
-};
-
-const logoLinkStyle = {
-    color: 'var(--text-primary)',
-    textDecoration: 'none',
-    display: 'flex',
-    alignItems: 'center',
-    gap: '0.5rem',
-};
-
-const logoIcon = {
-    fontSize: '1.8rem',
-};
-
-const navStyle = {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '2rem',
-};
-
-const navLinkStyle = {
-    color: 'var(--text-secondary)',
-    textDecoration: 'none',
-    display: 'flex',
-    alignItems: 'center',
-    gap: '0.5rem',
-    padding: '0.5rem 1rem',
-    borderRadius: '10px',
-    transition: 'all 0.3s ease',
-};
-
-const navIcon = {
-    fontSize: '1.2rem',
-};
-
-const userSectionStyle = {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '1rem',
-};
-
-const userGreeting = {
-    color: 'var(--text-secondary)',
-    fontSize: '0.9rem',
-};
-
-const logoutBtnStyle = {
-    background: 'var(--accent-red)',
-    color: 'white',
+const menuButtonStyle = {
+    background: 'none',
     border: 'none',
-    padding: '0.5rem 1rem',
-    borderRadius: '8px',
     cursor: 'pointer',
-    fontSize: '0.9rem',
+    padding: '0.5rem'
 };
 
-const authSectionStyle = {
+const menuIconStyle = {
     display: 'flex',
-    gap: '1rem',
+    flexDirection: 'column',
+    gap: '3px'
 };
 
-const authLinkStyle = {
-    color: 'var(--text-primary)',
-    textDecoration: 'none',
-    padding: '0.75rem 1.5rem',
-    borderRadius: '10px',
-    background: 'var(--gradient-primary)',
+const menuBarStyle = {
+    width: '20px',
+    height: '2px',
+    backgroundColor: '#7EBFFF',
+    borderRadius: '1px'
 };
 
-// CSS classes for active states
-const styleSheet = document.styleSheets[0];
-styleSheet.insertRule(`
-  .nav-link.active {
-    background: var(--gradient-primary) !important;
-    color: white !important;
-  }
-`, styleSheet.cssRules.length);
+const locationStyle = {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '0.5rem'
+};
 
-styleSheet.insertRule(`
-  .nav-link:hover {
-    background: var(--card-bg);
-    color: var(--text-primary);
-  }
-`, styleSheet.cssRules.length);
+const locationIconStyle = {
+    display: 'flex',
+    alignItems: 'center'
+};
+
+const cityTextStyle = {
+    color: 'black',
+    fontSize: '1.1rem',
+    fontWeight: '600'
+};
+
+const profileButtonStyle = {
+    background: 'none',
+    border: 'none',
+    cursor: 'pointer',
+    padding: '0.5rem'
+};
+
+const profileIconStyle = {
+    display: 'flex',
+    alignItems: 'center'
+};
 
 export default Header;

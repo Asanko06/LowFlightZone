@@ -4,90 +4,42 @@
   box-sizing: border-box;
 }
 
-:root {
-  --primary-bg: #0a0e17;
-  --secondary-bg: #1a1f2e;
-  --card-bg: #1e293b;
-  --accent-blue: #3b82f6;
-  --accent-green: #10b981;
-  --accent-red: #ef4444;
-  --accent-yellow: #f59e0b;
-  --text-primary: #ffffff;
-  --text-secondary: #94a3b8;
-  --text-muted: #64748b;
-  --border-color: #334155;
-  --gradient-primary: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-}
-
 body {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
-  background-color: var(--primary-bg);
-  color: var(--text-primary);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background-color: white;
+  color: black;
   line-height: 1.6;
-  min-height: 100vh;
 }
 
 .App {
   min-height: 100vh;
-  background: var(--primary-bg);
+  background-color: white;
 }
 
-/* Общие стили для карточек */
-.card {
-  background: var(--card-bg);
-  border-radius: 20px;
-  padding: 1.5rem;
-  margin: 1rem 0;
-  border: 1px solid var(--border-color);
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+/* Убираем стандартные стили кнопок */
+button {
+  font-family: inherit;
 }
 
-/* Кнопки */
-.btn {
-  padding: 1rem 2rem;
-  border: none;
-  border-radius: 12px;
-  font-size: 1.1rem;
-  font-weight: 600;
-  cursor: pointer;
+/* Анимации для интерактивных элементов */
+button {
   transition: all 0.3s ease;
-  text-decoration: none;
-  display: inline-block;
-  text-align: center;
 }
 
-.btn-primary {
-  background: var(--gradient-primary);
-  color: white;
+button:hover {
+  transform: translateY(-1px);
 }
 
-.btn-secondary {
-  background: var(--secondary-bg);
-  color: var(--text-primary);
-  border: 2px solid var(--border-color);
+/* Стили для скролла */
+::-webkit-scrollbar {
+  width: 6px;
 }
 
-/* Текст */
-.text-center {
-  text-align: center;
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
 }
 
-.text-muted {
-  color: var(--text-muted);
-}
-
-/* Status badges */
-.status-delayed {
-  color: var(--accent-red);
-  font-weight: 600;
-}
-
-.status-on-time {
-  color: var(--accent-green);
-  font-weight: 600;
-}
-
-.status-boarding {
-  color: var(--accent-yellow);
-  font-weight: 600;
+::-webkit-scrollbar-thumb {
+  background: #7EBFFF;
+  border-radius: 3px;
 }
