@@ -7,58 +7,90 @@ const LoginPage = () => {
     const [isLogin, setIsLogin] = useState(true);
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
+    const [firstName, setFirstName] = useState('');
+    const [lastName, setLastName] = useState('');
+    const [phone, setPhone] = useState('');
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
 
     const { login, register } = useAuth();
     const navigate = useNavigate();
 
-    const handleSubmit = async (e) => {
+    const handleLogin = async (e) => {
         e.preventDefault();
+        if (!email || !password) return setError('Please enter email and password');
+
         setLoading(true);
         setError('');
 
         try {
-            if (isLogin) {
-                await login(email, password);
-            } else {
-                await register(email, password);
-            }
+            await login(email, password);
             navigate('/');
-        } catch (error) {
-            setError(error.response?.data?.message || 'Произошла ошибка');
+        } catch (err) {
+            setError(err.response?.data?.message || err.message || 'Login failed. Please check your credentials.');
+        } finally {
+            setLoading(false);
         }
-        setLoading(false);
     };
 
-    const handleFormSubmit = (isLoginForm) => {
-        setIsLogin(isLoginForm);
-        if (email && password) {
-            handleSubmit({ preventDefault: () => {} });
+    const handleSignUp = async (e) => {
+        e.preventDefault();
+        if (!firstName || !lastName || !phone || !email || !password) return setError('Please fill in all fields');
+
+        setLoading(true);
+        setError('');
+
+        try {
+            const response = await register({ firstName, lastName, phone, email, password });
+
+            if (response.token) {
+                // успешная регистрация → авто-логин
+                await login(email, password);
+                navigate('/');
+            } else if (response.message === 'User already exists') {
+                setIsLogin(true);
+                setPassword('');
+                setError('');
+            } else {
+                setError(response.message || 'Registration failed. Please try again.');
+            }
+
+        } catch (err) {
+            setError(err.response?.data?.message || err.message || 'Registration failed. Please try again.');
+        } finally {
+            setLoading(false);
         }
     };
+
+    // --- переключение формы ---
+    const switchToLogin = () => {
+        setIsLogin(true);
+        setPassword('');
+        setError('');
+    };
+
+    const switchToSignUp = () => {
+        setIsLogin(false);
+        setPassword('');
+        setError('');
+    };
+
+    // --- обработка полей ---
+    const handleChange = (setter) => (e) => { setter(e.target.value); if (error) setError(''); };
+
+    const clearError = () => { setError(''); setLoading(false); };
 
     return (
         <div style={containerStyle}>
-            {/* Верхняя синяя секция */}
             <div style={topSectionStyle}>
                 <div style={contentWrapperStyle}>
                     <h1 style={welcomeTextStyle}>Welcome to</h1>
                     <h1 style={appNameStyle}>LowFlightZone</h1>
-
-                    {/* Место для картинки самолета */}
                     <div style={airplaneContainerStyle}>
-                        <div style={airplaneContainerStyle}>
-                            <img
-                                src={airplaneImage}
-                                alt="Airplane"
-                                style={airplaneImageStyle}
-                            />
-                        </div>
+                        <img src={airplaneImage} alt="Airplane" style={airplaneImageStyle} />
                     </div>
                 </div>
 
-                {/* Множественные дуги: голубая-белая, голубая-белая */}
                 <div style={arcsContainerStyle}>
                     <div style={whiteArc1Style}></div>
                     <div style={blueArc1Style}></div>
@@ -68,58 +100,124 @@ const LoginPage = () => {
                 </div>
             </div>
 
-            {/* Нижняя белая секция */}
             <div style={bottomSectionStyle}>
                 <div style={bottomContentStyle}>
-                    {error && <div style={errorStyle}>{error}</div>}
+                    {error && (
+                        <div style={errorStyle}>
+                            <strong>Error:</strong> {error}
+                            <button onClick={clearError} style={clearErrorButtonStyle}>×</button>
+                        </div>
+                    )}
 
-                    {/* Форма для входа/регистрации */}
-                    <div style={formContainerStyle}>
-                        <input
-                            type="email"
-                            placeholder="Email"
-                            value={email}
-                            onChange={(e) => setEmail(e.target.value)}
-                            style={inputStyle}
-                        />
-                        <input
-                            type="password"
-                            placeholder="Password"
-                            value={password}
-                            onChange={(e) => setPassword(e.target.value)}
-                            style={inputStyle}
-                        />
-                    </div>
+                    <form onSubmit={isLogin ? handleLogin : handleSignUp} style={formContainerStyle}>
+                        {!isLogin && (
+                            <>
+                                <input type="text" placeholder="First Name" value={firstName} onChange={handleChange(setFirstName)} style={{ ...inputStyle, ...(loading && disabledInputStyle) }} required disabled={loading} />
+                                <input type="text" placeholder="Last Name" value={lastName} onChange={handleChange(setLastName)} style={{ ...inputStyle, ...(loading && disabledInputStyle) }} required disabled={loading} />
+                                <input type="text" placeholder="Phone" value={phone} onChange={handleChange(setPhone)} style={{ ...inputStyle, ...(loading && disabledInputStyle) }} required disabled={loading} />
+                            </>
+                        )}
+                        <input type="email" placeholder="Email" value={email} onChange={handleChange(setEmail)} autoComplete="username" style={{ ...inputStyle, ...(loading && disabledInputStyle) }} required disabled={loading} />
+                        <input type="password" placeholder="Password" value={password} onChange={handleChange(setPassword)} autoComplete={isLogin ? 'current-password' : 'new-password'} style={{ ...inputStyle, ...(loading && disabledInputStyle) }} required disabled={loading} />
 
-                    {/* Кнопка Log In */}
-                    <button
-                        onClick={() => handleFormSubmit(true)}
-                        disabled={loading}
-                        style={loginButtonStyle}
-                    >
-                        {loading ? 'Loading...' : 'Log in'}
-                    </button>
+                        <button type="submit" disabled={loading} style={{ ...primaryButtonStyle, ...(loading && disabledButtonStyle) }}>
+                            {loading ? isLogin ? 'Signing in...' : 'Creating account...' : isLogin ? 'Log in' : 'Sign up'}
+                        </button>
+                    </form>
 
-                    {/* Кнопка Sign Up */}
-                    <button
-                        onClick={() => handleFormSubmit(false)}
-                        disabled={loading}
-                        style={signupButtonStyle}
-                    >
-                        Sign up
-                    </button>
+                    {isLogin ? (
+                        <button onClick={switchToSignUp} disabled={loading} style={secondaryButtonStyle}>Don't have an account? Sign up</button>
+                    ) : (
+                        <button onClick={switchToLogin} disabled={loading} style={secondaryButtonStyle}>Already have an account? Log in</button>
+                    )}
 
-                    {/* Ссылка внизу */}
-                    <button style={helpLinkStyle}>
-                        Not able to login? Try here
-                    </button>
+                    <button style={helpLinkStyle}>Not able to login? Try here</button>
                 </div>
             </div>
         </div>
     );
 };
-
 // Стили
+const clearErrorButtonStyle = {
+    position: 'absolute',
+    top: '5px',
+    right: '5px',
+    background: 'none',
+    border: 'none',
+    fontSize: '1.2rem',
+    cursor: 'pointer',
+    color: '#ff4444',
+};
+
+const errorStyle = {
+    color: '#ff4444',
+    backgroundColor: '#ffe6e6',
+    padding: '1rem',
+    borderRadius: '8px',
+    marginBottom: '1rem',
+    fontSize: '0.9rem',
+    position: 'relative',
+};
+
+const disabledInputStyle = {
+    backgroundColor: '#f5f5f5',
+    cursor: 'not-allowed',
+    opacity: 0.7,
+};
+
+const disabledButtonStyle = {
+    opacity: 0.6,
+    cursor: 'not-allowed',
+};
+
+const inputStyle = {
+    width: '100%',
+    padding: '1rem',
+    marginBottom: '1rem',
+    border: '1px solid #ddd',
+    borderRadius: '8px',
+    fontSize: '1rem',
+    outline: 'none',
+    transition: 'all 0.3s ease',
+};
+
+const primaryButtonStyle = {
+    width: '100%',
+    padding: '1rem',
+    backgroundColor: '#7EBFFF',
+    color: 'black',
+    border: 'none',
+    borderRadius: '8px',
+    fontSize: '1.1rem',
+    fontWeight: '600',
+    cursor: 'pointer',
+    marginBottom: '1rem',
+    transition: 'all 0.3s ease',
+};
+
+const secondaryButtonStyle = {
+    width: '100%',
+    padding: '1rem',
+    backgroundColor: 'transparent',
+    color: '#7F7F7F',
+    border: 'none',
+    borderRadius: '8px',
+    fontSize: '1.1rem',
+    fontWeight: '600',
+    cursor: 'pointer',
+    marginBottom: '2rem',
+    transition: 'color 0.3s ease',
+};
+
+const helpLinkStyle = {
+    backgroundColor: 'transparent',
+    border: 'none',
+    color: '#7EBFFF',
+    cursor: 'pointer',
+    fontSize: '0.9rem',
+    textDecoration: 'underline',
+};
+
 const airplaneImageStyle = {
     width: '200px',
     height: 'auto',
@@ -148,7 +246,7 @@ const contentWrapperStyle = {
     color: 'white',
     zIndex: 2,
     position: 'relative',
-    marginBottom: '60px', // Отступ для дуг
+    marginBottom: '60px',
 };
 
 const welcomeTextStyle = {
@@ -178,36 +276,32 @@ const airplaneContainerStyle = {
     zIndex: 10,
 };
 
-// Контейнер для дуг
 const arcsContainerStyle = {
     position: 'absolute',
-    bottom: '-120px', // опускаем дуги ниже, чтобы они не заезжали на самолёт
+    bottom: '-120px',
     left: 0,
     right: 0,
-    height: '200px', // больше места под плавный переход
+    height: '200px',
     overflow: 'hidden',
 };
 
-// Функция для дуги
-const arcStyle = (color, bottom, padding, zIndex) => ({
+const arcStyle = (color, bottom, zIndex) => ({
     position: 'absolute',
     left: '50%',
-    transform: 'translateX(-50%)', // центрируем
-    //right: padding,
+    transform: 'translateX(-50%)',
     bottom: bottom,
-    width: '150%', // шире экрана
-    height: '300%', // высота овала
+    width: '150%',
+    height: '300%',
     borderRadius: '200% / 100%',
     backgroundColor: color,
     zIndex,
 });
 
-// Дуги (снизу вверх)
-const blueArc1Style = arcStyle('#7EBFFF', -10, 0, 1);
-const whiteArc1Style = arcStyle('white', 0, 5, 2);
-const blueArc2Style = arcStyle('#7EBFFF', 120, 10, 3);
-const whiteArc2Style = arcStyle('white', 130, 15, 4); // эта белая сольётся с нижним блоком
-const blueArc0Style = arcStyle('#7EBFFF', 140, 10, 5);
+const blueArc1Style = arcStyle('#7EBFFF', -10, 1);
+const whiteArc1Style = arcStyle('white', 0, 2);
+const blueArc2Style = arcStyle('#7EBFFF', 120, 3);
+const whiteArc2Style = arcStyle('white', 130, 4);
+const blueArc0Style = arcStyle('#7EBFFF', 140, 5);
 
 const bottomSectionStyle = {
     flex: '1',
@@ -227,82 +321,5 @@ const bottomContentStyle = {
 const formContainerStyle = {
     marginBottom: '2rem',
 };
-
-const inputStyle = {
-    width: '100%',
-    padding: '1rem',
-    marginBottom: '1rem',
-    border: '1px solid #ddd',
-    borderRadius: '8px',
-    fontSize: '1rem',
-    outline: 'none',
-};
-
-const loginButtonStyle = {
-    width: '100%',
-    padding: '1rem',
-    backgroundColor: '#7EBFFF',
-    color: 'black',
-    border: 'none',
-    borderRadius: '8px',
-    fontSize: '1.1rem',
-    fontWeight: '600',
-    cursor: 'pointer',
-    marginBottom: '1rem',
-    transition: 'background-color 0.3s ease',
-};
-
-const signupButtonStyle = {
-    width: '100%',
-    padding: '1rem',
-    backgroundColor: 'transparent',
-    color: '#7F7F7F',
-    border: 'none',
-    borderRadius: '8px',
-    fontSize: '1.1rem',
-    fontWeight: '600',
-    cursor: 'pointer',
-    marginBottom: '2rem',
-    transition: 'color 0.3s ease',
-};
-
-const helpLinkStyle = {
-    backgroundColor: 'transparent',
-    border: 'none',
-    color: '#7EBFFF',
-    cursor: 'pointer',
-    fontSize: '0.9rem',
-    textDecoration: 'underline',
-};
-
-const errorStyle = {
-    color: '#ff4444',
-    backgroundColor: '#ffe6e6',
-    padding: '1rem',
-    borderRadius: '8px',
-    marginBottom: '1rem',
-    fontSize: '0.9rem',
-};
-
-// Добавляем hover эффекты
-const styleSheet = document.styleSheets[0];
-styleSheet.insertRule(`
-  input:focus {
-    border-color: #7EBFFF;
-  }
-`, styleSheet.cssRules.length);
-
-styleSheet.insertRule(`
-  button:hover {
-    opacity: 0.9;
-  }
-`, styleSheet.cssRules.length);
-
-styleSheet.insertRule(`
-  button:disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
-  }
-`, styleSheet.cssRules.length);
 
 export default LoginPage;
