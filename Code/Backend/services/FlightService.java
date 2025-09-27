@@ -10,6 +10,7 @@ import com.example.lowflightzone.entity.FlightSubscription;
 import com.example.lowflightzone.exceptions.AirportException;
 import com.example.lowflightzone.exceptions.FlightException;
 import com.example.lowflightzone.exceptions.ValidationException;
+import com.example.lowflightzone.repositories.FlightRepository;
 import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -27,11 +28,13 @@ public class FlightService {
 
     private final FlightDao flightDao;
     private final AirportDao airportDao;
+    private final FlightRepository flightRepository;
 
     @Autowired
-    public FlightService(FlightDao flightDao, AirportDao airportDao) {
+    public FlightService(FlightDao flightDao, AirportDao airportDao, FlightRepository flightRepository) {
         this.flightDao = flightDao;
         this.airportDao = airportDao;
+        this.flightRepository = flightRepository;
     }
 
     public List<FlightDto> getFlights(String departureAirport, String arrivalAirport, String status) {
@@ -54,6 +57,16 @@ public class FlightService {
         Flight flight = flightDao.findByFlightNumber(flightNumber)
                 .orElseThrow(() -> new FlightException(FLIGHT_NOT_FOUND_MESSAGE + flightNumber));
         return convertToDto(flight);
+    }
+
+    public List<FlightDto> searchFlights(String query) {
+        return flightRepository
+                .findByFlightNumberContainingIgnoreCaseOrDepartureAirport_CityContainingIgnoreCaseOrArrivalAirport_CityContainingIgnoreCase(
+                        query, query, query
+                )
+                .stream()
+                .map(this::convertToDto)
+                .collect(Collectors.toList());
     }
 
     public FlightDto addFlight(FlightDto flightDto) {
@@ -206,6 +219,8 @@ public class FlightService {
 
         return flightDto;
     }
+
+
 
     @Transactional
     public FlightDto getFlightById(Integer id) {

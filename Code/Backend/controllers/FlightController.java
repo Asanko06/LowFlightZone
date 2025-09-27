@@ -19,6 +19,7 @@ public class FlightController {
         this.flightService = flightService;
     }
 
+    // 📌 Получение списка рейсов с фильтрацией
     @GetMapping
     public ResponseEntity<List<FlightDto>> getFlights(
             @RequestParam(name = "departure", required = false) final String departureAirport,
@@ -29,30 +30,42 @@ public class FlightController {
         return ResponseEntity.ok(flights);
     }
 
+    // 📌 Получение рейса по ID
     @GetMapping("/{id}")
     public ResponseEntity<FlightDto> getFlightById(@PathVariable final Integer id) {
         FlightDto flight = flightService.getFlightById(id);
         return ResponseEntity.ok(flight);
     }
 
+    // 📌 Получение рейса по номеру
     @GetMapping("/number/{flightNumber}")
     public ResponseEntity<FlightDto> getFlightByNumber(@PathVariable final String flightNumber) {
         FlightDto flight = flightService.getFlightByNumber(flightNumber);
         return ResponseEntity.ok(flight);
     }
 
+    // ✅ Новый эндпоинт для поиска рейсов (по номеру, городу, аэропорту)
+    @GetMapping("/search")
+    public ResponseEntity<List<FlightDto>> searchFlights(@RequestParam("query") String query) {
+        List<FlightDto> results = flightService.searchFlights(query);
+        return ResponseEntity.ok(results);
+    }
+
+    // 📌 Добавление нового рейса
     @PostMapping
     public ResponseEntity<FlightDto> addFlight(@RequestBody final FlightDto flightDto) {
         FlightDto newFlight = flightService.addFlight(flightDto);
         return ResponseEntity.status(HttpStatus.CREATED).body(newFlight);
     }
 
+    // 📌 Удаление рейса по ID
     @DeleteMapping("/{id}")
     public ResponseEntity<String> deleteFlight(@PathVariable final Integer id) {
         flightService.deleteFlightById(id);
         return ResponseEntity.ok("Рейс успешно удален");
     }
 
+    // 📌 Полное обновление рейса
     @PutMapping("/{id}")
     public ResponseEntity<FlightDto> updateFlight(@PathVariable final Integer id,
                                                   @RequestBody final FlightDto flightDto) {
@@ -60,6 +73,7 @@ public class FlightController {
         return ResponseEntity.ok(updatedFlight);
     }
 
+    // 📌 Частичное обновление рейса
     @PatchMapping("/{id}")
     public ResponseEntity<FlightDto> patchFlight(@PathVariable final Integer id,
                                                  @RequestBody final FlightDto flightDto) {

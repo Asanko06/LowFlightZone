@@ -14,6 +14,7 @@ const Home = () => {
         loadRecentViews();
     }, []);
 
+    // 📌 Загрузка истории просмотров
     const loadRecentViews = async () => {
         if (!currentUser) return;
         try {
@@ -29,27 +30,41 @@ const Home = () => {
         }
     };
 
+    // 📌 Поиск рейсов
     const handleSearch = async (e) => {
         e.preventDefault();
-        if (searchQuery.trim()) {
-            try {
-                console.log('Searching for:', searchQuery);
-                await loadRecentViews();
-            } catch (error) {
-                console.error('Search error:', error);
-            }
+        if (!searchQuery.trim()) {
+            loadRecentViews();
+            return;
+        }
+
+        try {
+            setLoading(true);
+            const response = await api.get(`/flights/search?query=${encodeURIComponent(searchQuery)}`);
+            const flights = Array.isArray(response.data) ? response.data : [];
+
+            // Приводим к тому же формату, что и история просмотров
+            const wrapped = flights.map(f => ({
+                id: f.id,
+                flight: f,
+                viewCount: 0,
+                viewedAt: null
+            }));
+            setRecentFlights(wrapped);
+        } catch (error) {
+            console.error('Search error:', error);
+            setError('Ошибка при поиске рейсов');
+        } finally {
+            setLoading(false);
         }
     };
 
+    // 📌 Подписка/отписка
     const toggleSubscription = async (flightId, currentStatus, flightNumber) => {
-        console.log("TOGGLE CLICKED:", { flightId, flightNumber, currentStatus }); // 👈 проверка
-
         try {
             if (currentStatus) {
-                console.log("Unsubscribing...");
                 await api.post(`/api/subscriptions/unsubscribe?flightNumber=${flightNumber}`);
             } else {
-                console.log("Subscribing...");
                 await api.post(`/api/subscriptions/subscribe?flightId=${flightId}`);
             }
 
@@ -147,7 +162,9 @@ const Home = () => {
 
             <div style={recentFlightsSectionStyle}>
                 <div style={sectionHeaderStyle}>
-                    <h2 style={sectionTitleStyle}>Недавно просмотренные рейсы</h2>
+                    <h2 style={sectionTitleStyle}>
+                        {searchQuery ? 'Результаты поиска' : 'Недавно просмотренные рейсы'}
+                    </h2>
                     <button onClick={loadRecentViews} style={refreshButtonStyle}>
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="#7EBFFF">
                             <path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z" />
@@ -160,8 +177,8 @@ const Home = () => {
                         <svg width="48" height="48" viewBox="0 0 24 24" fill="#7EBFFF">
                             <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" />
                         </svg>
-                        <h3>История просмотров пуста</h3>
-                        <p>Начните поиск рейсов, чтобы они появились здесь</p>
+                        <h3>{searchQuery ? 'Рейсы не найдены' : 'История просмотров пуста'}</h3>
+                        <p>{searchQuery ? 'Попробуйте другой запрос' : 'Начните поиск рейсов, чтобы они появились здесь'}</p>
                     </div>
                 ) : (
                     <div style={flightsListStyle}>
@@ -179,16 +196,16 @@ const Home = () => {
                                         <div style={flightHeaderStyle}>
                                             <span style={flightNumberStyle}>{flight?.flightNumber || '—'}</span>
                                             <span style={viewCountStyle}>
-                        Просмотров: {viewHistory?.viewCount ?? 0}
-                      </span>
+                                                Просмотров: {viewHistory?.viewCount ?? 0}
+                                            </span>
                                         </div>
                                         <span style={flightRouteStyle}>
-                      {flight?.departureAirport?.city} ({flight?.departureAirport?.iataCode}) →{' '}
+                                            {flight?.departureAirport?.city} ({flight?.departureAirport?.iataCode}) →{' '}
                                             {flight?.arrivalAirport?.city} ({flight?.arrivalAirport?.iataCode})
-                    </span>
+                                        </span>
                                         <span style={viewDateStyle}>
-                      Последний просмотр: {formatDate(viewHistory?.viewedAt)}
-                    </span>
+                                            Последний просмотр: {formatDate(viewHistory?.viewedAt)}
+                                        </span>
                                     </div>
                                     <button
                                         onClick={(e) => {
@@ -199,16 +216,12 @@ const Home = () => {
                                         aria-label={flight?.subscribed ? 'Отписаться от рейса' : 'Подписаться на рейс'}
                                     >
                                         {flight?.subscribed ? (
-                                            <svg width="24" height="24" viewBox="0 0 24 24" fill="black" stroke="black"
-                                                 strokeWidth="1">
-                                                <path
-                                                    d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
+                                            <svg width="24" height="24" viewBox="0 0 24 24" fill="black" stroke="black" strokeWidth="1">
+                                                <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" />
                                             </svg>
                                         ) : (
-                                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="black"
-                                                 strokeWidth="2">
-                                                <path
-                                                    d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
+                                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="black" strokeWidth="2">
+                                                <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" />
                                             </svg>
                                         )}
                                     </button>
@@ -222,8 +235,7 @@ const Home = () => {
     );
 };
 
-// ✅ Все стили и hover-эффекты сохранены один в один, как у тебя
-
+// 📌 стили остаются без изменений …
 const containerStyle = {
     minHeight: '100vh',
     backgroundColor: 'white',
