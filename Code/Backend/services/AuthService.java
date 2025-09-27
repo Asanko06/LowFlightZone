@@ -7,11 +7,14 @@ import com.example.lowflightzone.entity.User;
 import com.example.lowflightzone.security.CustomUserDetailsService;
 import com.example.lowflightzone.security.JwtUtil;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
 
 @Service
 @RequiredArgsConstructor
@@ -24,17 +27,22 @@ public class AuthService {
     private final CustomUserDetailsService userDetailsService;
 
     public AuthResponse register(AuthRequest request) {
+        // Проверка на существующего пользователя
         if (userDao.findByEmail(request.getEmail()).isPresent()) {
-            return new AuthResponse(null, request.getEmail(), "User already exists");
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "User already exists");
         }
 
+        // Создаём пользователя
         User user = new User();
         user.setEmail(request.getEmail());
         user.setPassword(passwordEncoder.encode(request.getPassword()));
-        user.setFirstName(request.getEmail().split("@")[0]); // временное имя
+        user.setFirstName(request.getFirstName());
+        user.setLastName(request.getLastName());
+        user.setPhoneNumber(request.getPhoneNumber());
 
         User savedUser = userDao.save(user);
 
+        // Генерация JWT после успешной регистрации
         final UserDetails userDetails = userDetailsService.loadUserByUsername(savedUser.getEmail());
         final String jwt = jwtUtil.generateToken(userDetails);
 
@@ -42,9 +50,13 @@ public class AuthService {
     }
 
     public AuthResponse login(AuthRequest request) {
-        authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword())
-        );
+        try {
+            authenticationManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword())
+            );
+        } catch (BadCredentialsException ex) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid email or password");
+        }
 
         final UserDetails userDetails = userDetailsService.loadUserByUsername(request.getEmail());
         final String jwt = jwtUtil.generateToken(userDetails);

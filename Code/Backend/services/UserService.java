@@ -7,6 +7,7 @@ import com.example.lowflightzone.exceptions.UserException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -47,8 +48,13 @@ public class UserService {
             throw new UserException("Пользователь с email " + userDto.getEmail() + " уже существует");
         }
 
-        User user = convertToEntity(userDto);
-        user.setPassword(passwordEncoder.encode(userDto.getPassword())); // добавляем эту строку
+        User user = new User();
+        user.setEmail(userDto.getEmail());
+        user.setFirstName(userDto.getFirstName());       // имя
+        user.setLastName(userDto.getLastName());         // фамилия
+        user.setPhoneNumber(userDto.getPhoneNumber());   // телефон
+        user.setDeviceToken(userDto.getDeviceToken());
+        user.setPassword(passwordEncoder.encode(userDto.getPassword())); // хешируем пароль
 
         User savedUser = userDao.save(user);
         return convertToDto(savedUser);
@@ -70,21 +76,9 @@ public class UserService {
         dto.setDeviceToken(user.getDeviceToken());
         dto.setCreatedAt(user.getCreatedAt());
 
-        // Загружаем подписки пользователя
         dto.setSubscriptions(subscriptionService.getSubscriptionsByUserId(user.getId()));
         dto.setSubscriptionCount(user.getSubscriptions().size());
 
         return dto;
-    }
-
-    private User convertToEntity(UserDto dto) {
-        User user = new User();
-        user.setEmail(dto.getEmail());
-        user.setFirstName(dto.getFirstName());
-        user.setLastName(dto.getLastName());
-        user.setPhoneNumber(dto.getPhoneNumber());
-        user.setDeviceToken(dto.getDeviceToken());
-
-        return user;
     }
 }

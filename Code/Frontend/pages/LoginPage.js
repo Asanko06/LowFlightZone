@@ -9,7 +9,7 @@ const LoginPage = () => {
     const [password, setPassword] = useState('');
     const [firstName, setFirstName] = useState('');
     const [lastName, setLastName] = useState('');
-    const [phone, setPhone] = useState('');
+    const [phoneNumber, setPhoneNumber] = useState('');
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
 
@@ -17,8 +17,11 @@ const LoginPage = () => {
     const navigate = useNavigate();
 
     const handleLogin = async (e) => {
-        e.preventDefault();
-        if (!email || !password) return setError('Please enter email and password');
+        if (e) e.preventDefault();
+        if (!email || !password) {
+            setError('Please enter email and password');
+            return;
+        }
 
         setLoading(true);
         setError('');
@@ -26,59 +29,66 @@ const LoginPage = () => {
         try {
             await login(email, password);
             navigate('/');
-        } catch (err) {
-            setError(err.response?.data?.message || err.message || 'Login failed. Please check your credentials.');
+        } catch (error) {
+            setError('Login failed. Please check your credentials.');
         } finally {
             setLoading(false);
         }
     };
 
     const handleSignUp = async (e) => {
-        e.preventDefault();
-        if (!firstName || !lastName || !phone || !email || !password) return setError('Please fill in all fields');
+        if (e) e.preventDefault();
+        if (!email || !password || !firstName || !lastName || !phoneNumber) {
+            setError('Please fill all fields');
+            return;
+        }
 
         setLoading(true);
         setError('');
 
         try {
-            const response = await register({ firstName, lastName, phone, email, password });
+            const payload = { email, password, firstName, lastName, phoneNumber };
+            console.log('Attempting registration with:', payload);
 
-            if (response.token) {
-                // успешная регистрация → авто-логин
-                await login(email, password);
-                navigate('/');
-            } else if (response.message === 'User already exists') {
-                setIsLogin(true);
-                setPassword('');
-                setError('');
-            } else {
-                setError(response.message || 'Registration failed. Please try again.');
+            const response = await register(payload);
+            console.log('Registration response:', response);
+
+            if (!response.token) {
+                setError(response.message);
+                setLoading(false);
+                return;
             }
 
+            // После успешной регистрации автоматически логинимся
+            await login(email, password);
+            navigate('/');
         } catch (err) {
-            setError(err.response?.data?.message || err.message || 'Registration failed. Please try again.');
+            console.error('Registration error:', err);
+            setError(err.response?.data?.message || 'Registration failed. Please try again.');
         } finally {
             setLoading(false);
         }
     };
 
-    // --- переключение формы ---
     const switchToLogin = () => {
         setIsLogin(true);
+        setEmail('');
         setPassword('');
+        setFirstName('');
+        setLastName('');
+        setPhoneNumber('');
         setError('');
     };
 
     const switchToSignUp = () => {
         setIsLogin(false);
+        setEmail('');
         setPassword('');
+        setFirstName('');
+        setLastName('');
+        setPhoneNumber('');
         setError('');
     };
-
-    // --- обработка полей ---
-    const handleChange = (setter) => (e) => { setter(e.target.value); if (error) setError(''); };
-
-    const clearError = () => { setError(''); setLoading(false); };
 
     return (
         <div style={containerStyle}>
@@ -87,7 +97,11 @@ const LoginPage = () => {
                     <h1 style={welcomeTextStyle}>Welcome to</h1>
                     <h1 style={appNameStyle}>LowFlightZone</h1>
                     <div style={airplaneContainerStyle}>
-                        <img src={airplaneImage} alt="Airplane" style={airplaneImageStyle} />
+                        <img
+                            src={airplaneImage}
+                            alt="Airplane"
+                            style={airplaneImageStyle}
+                        />
                     </div>
                 </div>
 
@@ -105,30 +119,101 @@ const LoginPage = () => {
                     {error && (
                         <div style={errorStyle}>
                             <strong>Error:</strong> {error}
-                            <button onClick={clearError} style={clearErrorButtonStyle}>×</button>
+                            <button
+                                onClick={() => setError('')}
+                                style={clearErrorButtonStyle}
+                            >
+                                ×
+                            </button>
                         </div>
                     )}
 
-                    <form onSubmit={isLogin ? handleLogin : handleSignUp} style={formContainerStyle}>
+                    <div style={formContainerStyle}>
+                        <input
+                            type="email"
+                            placeholder="Email"
+                            value={email}
+                            onChange={(e) => setEmail(e.target.value)}
+                            style={{ ...inputStyle, ...(loading && disabledInputStyle) }}
+                            disabled={loading}
+                            required
+                        />
+                        <input
+                            type="password"
+                            placeholder="Password"
+                            value={password}
+                            onChange={(e) => setPassword(e.target.value)}
+                            style={{ ...inputStyle, ...(loading && disabledInputStyle) }}
+                            disabled={loading}
+                            required
+                        />
                         {!isLogin && (
                             <>
-                                <input type="text" placeholder="First Name" value={firstName} onChange={handleChange(setFirstName)} style={{ ...inputStyle, ...(loading && disabledInputStyle) }} required disabled={loading} />
-                                <input type="text" placeholder="Last Name" value={lastName} onChange={handleChange(setLastName)} style={{ ...inputStyle, ...(loading && disabledInputStyle) }} required disabled={loading} />
-                                <input type="text" placeholder="Phone" value={phone} onChange={handleChange(setPhone)} style={{ ...inputStyle, ...(loading && disabledInputStyle) }} required disabled={loading} />
+                                <input
+                                    type="text"
+                                    placeholder="First Name"
+                                    value={firstName}
+                                    onChange={(e) => setFirstName(e.target.value)}
+                                    style={inputStyle}
+                                    disabled={loading}
+                                    required
+                                />
+                                <input
+                                    type="text"
+                                    placeholder="Last Name"
+                                    value={lastName}
+                                    onChange={(e) => setLastName(e.target.value)}
+                                    style={inputStyle}
+                                    disabled={loading}
+                                    required
+                                />
+                                <input
+                                    type="tel"
+                                    placeholder="Phone Number"
+                                    value={phoneNumber}
+                                    onChange={(e) => setPhoneNumber(e.target.value)}
+                                    style={inputStyle}
+                                    disabled={loading}
+                                    required
+                                />
                             </>
                         )}
-                        <input type="email" placeholder="Email" value={email} onChange={handleChange(setEmail)} autoComplete="username" style={{ ...inputStyle, ...(loading && disabledInputStyle) }} required disabled={loading} />
-                        <input type="password" placeholder="Password" value={password} onChange={handleChange(setPassword)} autoComplete={isLogin ? 'current-password' : 'new-password'} style={{ ...inputStyle, ...(loading && disabledInputStyle) }} required disabled={loading} />
-
-                        <button type="submit" disabled={loading} style={{ ...primaryButtonStyle, ...(loading && disabledButtonStyle) }}>
-                            {loading ? isLogin ? 'Signing in...' : 'Creating account...' : isLogin ? 'Log in' : 'Sign up'}
-                        </button>
-                    </form>
+                    </div>
 
                     {isLogin ? (
-                        <button onClick={switchToSignUp} disabled={loading} style={secondaryButtonStyle}>Don't have an account? Sign up</button>
+                        <>
+                            <button
+                                onClick={handleLogin}
+                                disabled={loading}
+                                style={{ ...primaryButtonStyle, ...(loading && disabledButtonStyle) }}
+                            >
+                                {loading ? 'Signing in...' : 'Log in'}
+                            </button>
+                            <button
+                                onClick={switchToSignUp}
+                                disabled={loading}
+                                style={secondaryButtonStyle}
+                            >
+                                Don't have an account? Sign up
+                            </button>
+                        </>
                     ) : (
-                        <button onClick={switchToLogin} disabled={loading} style={secondaryButtonStyle}>Already have an account? Log in</button>
+                        <>
+                            <button
+                                onClick={handleSignUp}
+                                disabled={loading}
+                                style={{ ...primaryButtonStyle, ...(loading && disabledButtonStyle) }}
+                            >
+                                {loading ? 'Creating account...' : 'Sign up'}
+                            </button>
+                            <button
+                                onClick={switchToLogin}
+                                disabled={loading}
+                                style={secondaryButtonStyle}
+                            >
+                                Already have an account? Log in
+                            </button>
+                        </>
                     )}
 
                     <button style={helpLinkStyle}>Not able to login? Try here</button>
@@ -137,92 +222,8 @@ const LoginPage = () => {
         </div>
     );
 };
-// Стили
-const clearErrorButtonStyle = {
-    position: 'absolute',
-    top: '5px',
-    right: '5px',
-    background: 'none',
-    border: 'none',
-    fontSize: '1.2rem',
-    cursor: 'pointer',
-    color: '#ff4444',
-};
 
-const errorStyle = {
-    color: '#ff4444',
-    backgroundColor: '#ffe6e6',
-    padding: '1rem',
-    borderRadius: '8px',
-    marginBottom: '1rem',
-    fontSize: '0.9rem',
-    position: 'relative',
-};
-
-const disabledInputStyle = {
-    backgroundColor: '#f5f5f5',
-    cursor: 'not-allowed',
-    opacity: 0.7,
-};
-
-const disabledButtonStyle = {
-    opacity: 0.6,
-    cursor: 'not-allowed',
-};
-
-const inputStyle = {
-    width: '100%',
-    padding: '1rem',
-    marginBottom: '1rem',
-    border: '1px solid #ddd',
-    borderRadius: '8px',
-    fontSize: '1rem',
-    outline: 'none',
-    transition: 'all 0.3s ease',
-};
-
-const primaryButtonStyle = {
-    width: '100%',
-    padding: '1rem',
-    backgroundColor: '#7EBFFF',
-    color: 'black',
-    border: 'none',
-    borderRadius: '8px',
-    fontSize: '1.1rem',
-    fontWeight: '600',
-    cursor: 'pointer',
-    marginBottom: '1rem',
-    transition: 'all 0.3s ease',
-};
-
-const secondaryButtonStyle = {
-    width: '100%',
-    padding: '1rem',
-    backgroundColor: 'transparent',
-    color: '#7F7F7F',
-    border: 'none',
-    borderRadius: '8px',
-    fontSize: '1.1rem',
-    fontWeight: '600',
-    cursor: 'pointer',
-    marginBottom: '2rem',
-    transition: 'color 0.3s ease',
-};
-
-const helpLinkStyle = {
-    backgroundColor: 'transparent',
-    border: 'none',
-    color: '#7EBFFF',
-    cursor: 'pointer',
-    fontSize: '0.9rem',
-    textDecoration: 'underline',
-};
-
-const airplaneImageStyle = {
-    width: '200px',
-    height: 'auto',
-    maxWidth: '100%',
-};
+// ==================== Стили ====================
 
 const containerStyle = {
     minHeight: '100vh',
@@ -320,6 +321,92 @@ const bottomContentStyle = {
 
 const formContainerStyle = {
     marginBottom: '2rem',
+};
+
+const inputStyle = {
+    width: '100%',
+    padding: '1rem',
+    marginBottom: '1rem',
+    border: '1px solid #ddd',
+    borderRadius: '8px',
+    fontSize: '1rem',
+    outline: 'none',
+    transition: 'all 0.3s ease',
+};
+
+const disabledInputStyle = {
+    backgroundColor: '#f5f5f5',
+    cursor: 'not-allowed',
+    opacity: 0.7,
+};
+
+const primaryButtonStyle = {
+    width: '100%',
+    padding: '1rem',
+    backgroundColor: '#7EBFFF',
+    color: 'black',
+    border: 'none',
+    borderRadius: '8px',
+    fontSize: '1.1rem',
+    fontWeight: '600',
+    cursor: 'pointer',
+    marginBottom: '1rem',
+    transition: 'all 0.3s ease',
+};
+
+const secondaryButtonStyle = {
+    width: '100%',
+    padding: '1rem',
+    backgroundColor: 'transparent',
+    color: '#7F7F7F',
+    border: 'none',
+    borderRadius: '8px',
+    fontSize: '1.1rem',
+    fontWeight: '600',
+    cursor: 'pointer',
+    marginBottom: '2rem',
+    transition: 'color 0.3s ease',
+};
+
+const helpLinkStyle = {
+    backgroundColor: 'transparent',
+    border: 'none',
+    color: '#7EBFFF',
+    cursor: 'pointer',
+    fontSize: '0.9rem',
+    textDecoration: 'underline',
+};
+
+const errorStyle = {
+    color: '#ff4444',
+    backgroundColor: '#ffe6e6',
+    padding: '1rem',
+    borderRadius: '8px',
+    marginBottom: '1rem',
+    fontSize: '0.9rem',
+    position: 'relative',
+};
+
+const disabledButtonStyle = {
+    opacity: 0.6,
+    cursor: 'not-allowed',
+};
+
+const clearErrorButtonStyle = {
+    position: 'absolute',
+    top: '5px',
+    right: '5px',
+    background: 'none',
+    border: 'none',
+    fontSize: '1.2rem',
+    cursor: 'pointer',
+    color: '#ff4444',
+};
+
+const airplaneImageStyle = {
+    width: '200px',
+    height: 'auto',
+    maxWidth: '100%',
 };
 
 export default LoginPage;

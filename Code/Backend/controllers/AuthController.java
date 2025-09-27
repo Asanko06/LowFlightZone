@@ -20,12 +20,14 @@ public class AuthController {
     private final JwtUtil jwtUtil;
 
     @Operation(summary = "Регистрация нового пользователя")
+   // @CrossOrigin(origins = "http://localhost:3000")
     @PostMapping("/register")
     public ResponseEntity<AuthResponse> register(@RequestBody AuthRequest request) {
         return ResponseEntity.ok(authService.register(request));
     }
 
     @Operation(summary = "Вход в систему")
+    //@CrossOrigin(origins = "http://localhost:3000")
     @PostMapping("/login")
     public ResponseEntity<AuthResponse> login(@RequestBody AuthRequest request) {
         return ResponseEntity.ok(authService.login(request));

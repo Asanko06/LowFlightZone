@@ -1,11 +1,12 @@
 package com.example.lowflightzone.dto;
 
-import lombok.Getter;
-import lombok.Setter;
+import lombok.Data;
 
-@Getter
-@Setter
+@Data
 public class AuthRequest {
     private String email;
     private String password;
+    private String firstName;   // добавлено
+    private String lastName;    // добавлено
+    private String phoneNumber; // добавлено
 }

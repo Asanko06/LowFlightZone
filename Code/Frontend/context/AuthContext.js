@@ -3,7 +3,9 @@ import { authService } from '../services/auth';
 
 const AuthContext = createContext();
 
-export const useAuth = () => useContext(AuthContext);
+export const useAuth = () => {
+    return useContext(AuthContext);
+};
 
 export const AuthProvider = ({ children }) => {
     const [currentUser, setCurrentUser] = useState(null);
@@ -20,9 +22,6 @@ export const AuthProvider = ({ children }) => {
     const login = async (email, password) => {
         try {
             const response = await authService.login(email, password);
-            if (!response.token) {
-                throw new Error(response.message || 'Login failed');
-            }
             localStorage.setItem('authToken', response.token);
             setCurrentUser({ token: response.token, email: response.email });
             return response;
@@ -31,19 +30,12 @@ export const AuthProvider = ({ children }) => {
         }
     };
 
-    const register = async ({ firstName, lastName, phone, email, password }) => {
+    const register = async ({ email, password, firstName, lastName, phoneNumber }) => {
         try {
-            const response = await authService.register({ firstName, lastName, phone, email, password });
-
-            if (response.token) {
-                // успешная регистрация
-                localStorage.setItem('authToken', response.token);
-                setCurrentUser({ token: response.token, email: response.email });
-            }
-
-            // возвращаем ответ сервера независимо от токена
+            const response = await authService.register({ email, password, firstName, lastName, phoneNumber });
+            localStorage.setItem('authToken', response.token);
+            setCurrentUser({ token: response.token, email: response.email });
             return response;
-
         } catch (error) {
             throw error;
         }

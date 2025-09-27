@@ -1,18 +1,12 @@
 package com.example.lowflightzone.dto;
 
-import lombok.Getter;
-import lombok.Setter;
+import lombok.AllArgsConstructor;
+import lombok.Data;
 
-@Getter
-@Setter
+@Data
+@AllArgsConstructor
 public class AuthResponse {
-    private String token;
+    private String token;    // JWT токен (null при ошибке)
     private String email;
-    private String message;
-
-    public AuthResponse(String token, String email, String message) {
-        this.token = token;
-        this.email = email;
-        this.message = message;
-    }
+    private String message;  // Сообщение об успешной регистрации/ошибке
 }
