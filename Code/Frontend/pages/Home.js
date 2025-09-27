@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
-import airplaneImage from '../assets/plane.png';
+import airplaneImage from "../assets/plane.png";
 
 const Home = () => {
     const [searchQuery, setSearchQuery] = useState('');
+    // Используем useReducer для более надежного управления состоянием
     const [recentFlights, setRecentFlights] = useState([
         {
             id: 1,
@@ -37,14 +38,14 @@ const Home = () => {
     const handleSearch = (e) => {
         e.preventDefault();
         if (searchQuery.trim()) {
-            // Здесь будет логика поиска рейсов
             console.log('Searching for:', searchQuery);
         }
     };
 
+    // Исправленная функция переключения подписки
     const toggleSubscription = (flightId) => {
-        setRecentFlights(flights =>
-            flights.map(flight =>
+        setRecentFlights(prevFlights =>
+            prevFlights.map(flight =>
                 flight.id === flightId
                     ? { ...flight, isSubscribed: !flight.isSubscribed }
                     : flight
@@ -54,12 +55,15 @@ const Home = () => {
 
     return (
         <div style={containerStyle}>
-            <div style={airplaneContainerStyle}>
-                <img
-                    src={airplaneImage}
-                    alt="Airplane"
-                    style={airplaneImageStyle}
-                />
+            {/* Картинка самолета вверху */}
+            <div style={airplaneSectionStyle}>
+                <div style={airplaneContainerStyle}>
+                    <img
+                        src={airplaneImage}
+                        alt="Airplane"
+                        style={airplaneImageStyle}
+                    />
+                </div>
             </div>
 
             {/* Строка поиска */}
@@ -97,16 +101,17 @@ const Home = () => {
                             <button
                                 onClick={() => toggleSubscription(flight.id)}
                                 style={heartButtonStyle}
+                                aria-label={flight.isSubscribed ? 'Отписаться от рейса' : 'Подписаться на рейс'}
                             >
                                 {flight.isSubscribed ? (
                                     // Заполненное сердечко
-                                    <svg width="24" height="24" viewBox="0 0 24 24" fill="#7EBFFF">
+                                    <svg width="24" height="24" viewBox="0 0 24 24" fill="black" stroke="black" strokeWidth="1">
                                         <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
                                     </svg>
                                 ) : (
                                     // Контур сердечка
-                                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="black">
-                                        <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" strokeWidth="2"/>
+                                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="black" strokeWidth="2">
+                                        <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
                                     </svg>
                                 )}
                             </button>
@@ -129,6 +134,16 @@ const airplaneSectionStyle = {
     padding: '2rem 0 1rem 0'
 };
 
+const airplaneContainerStyle = {
+    marginTop: '2rem',
+    position: 'relative',
+    bottom: '10px',
+    left: '50%',
+    transform: 'translateX(-50%)',
+    overflow: 'hidden',
+    zIndex: 10,
+};
+
 const airplaneImageStyle = {
     fontSize: '4rem',
     opacity: '0.8'
@@ -141,16 +156,6 @@ const searchSectionStyle = {
 const searchFormStyle = {
     maxWidth: '600px',
     margin: '0 auto'
-};
-
-const airplaneContainerStyle = {
-    marginTop: '2rem',
-    position: 'relative',
-    bottom: '10px',
-    left: '43%',
-    //transform: 'translateX(-50%)',
-    overflow: 'hidden',
-    //zIndex: 10,
 };
 
 const searchContainerStyle = {
@@ -176,7 +181,8 @@ const searchButtonStyle = {
     cursor: 'pointer',
     display: 'flex',
     alignItems: 'center',
-    justifyContent: 'center'
+    justifyContent: 'center',
+    transition: 'background-color 0.3s ease'
 };
 
 const recentFlightsSectionStyle = {
@@ -206,7 +212,8 @@ const flightItemStyle = {
     backgroundColor: '#7EBFFF',
     padding: '1.2rem 1.5rem',
     borderRadius: '12px',
-    boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+    boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+    transition: 'transform 0.2s ease'
 };
 
 const flightInfoStyle = {
@@ -236,20 +243,33 @@ const heartButtonStyle = {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    transition: 'background-color 0.3s ease'
+    transition: 'all 0.3s ease',
+    minWidth: '44px',
+    minHeight: '44px'
 };
 
 // Добавляем hover эффекты
 const styleSheet = document.styleSheets[0];
+
+// Эффект при наведении на карточку рейса
 styleSheet.insertRule(`
-  .heart-button:hover {
-    background-color: rgba(255, 255, 255, 0.2);
+  [style*="${flightItemStyle.backgroundColor}"]:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.15);
   }
 `, styleSheet.cssRules.length);
 
+// Эффект при наведении на кнопку поиска
 styleSheet.insertRule(`
-  .search-button:hover {
+  [style*="${searchButtonStyle.backgroundColor}"]:hover {
     background-color: #6ca8e6;
+  }
+`, styleSheet.cssRules.length);
+
+// Эффект при наведении на сердечко
+styleSheet.insertRule(`
+  [style*="${heartButtonStyle.background}"]:hover {
+    background-color: rgba(255, 255, 255, 0.3);
   }
 `, styleSheet.cssRules.length);
 

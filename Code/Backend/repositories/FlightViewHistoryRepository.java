@@ -1,0 +1,35 @@
+package com.example.lowflightzone.repositories;
+
+import com.example.lowflightzone.entity.FlightViewHistory;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
+import org.springframework.stereotype.Repository;
+import java.util.List;
+import java.util.Optional;
+
+@Repository
+public interface FlightViewHistoryRepository extends JpaRepository<FlightViewHistory, Integer> {
+
+    // Найти запись по пользователю и рейсу
+    Optional<FlightViewHistory> findByUserIdAndFlightId(Integer userId, Integer flightId);
+
+    // Получить историю просмотров пользователя с пагинацией
+    @Query("SELECT fvh FROM FlightViewHistory fvh WHERE fvh.user.id = :userId ORDER BY fvh.viewedAt DESC")
+    List<FlightViewHistory> findByUserIdOrderByViewedAtDesc(@Param("userId") Integer userId);
+
+    // Получить последние N просмотренных рейсов
+    @Query("SELECT fvh FROM FlightViewHistory fvh WHERE fvh.user.id = :userId ORDER BY fvh.viewedAt DESC LIMIT :limit")
+    List<FlightViewHistory> findRecentByUserId(@Param("userId") Integer userId, @Param("limit") int limit);
+
+    // Получить самые часто просматриваемые рейсы
+    @Query("SELECT fvh FROM FlightViewHistory fvh WHERE fvh.user.id = :userId ORDER BY fvh.viewCount DESC, fvh.viewedAt DESC LIMIT :limit")
+    List<FlightViewHistory> findMostViewedByUserId(@Param("userId") Integer userId, @Param("limit") int limit);
+
+    // Проверить, существует ли запись
+    boolean existsByUserIdAndFlightId(Integer userId, Integer flightId);
+
+    // Количество просмотров рейса пользователем
+    @Query("SELECT COALESCE(SUM(fvh.viewCount), 0) FROM FlightViewHistory fvh WHERE fvh.user.id = :userId AND fvh.flight.id = :flightId")
+    Integer getViewCountByUserAndFlight(@Param("userId") Integer userId, @Param("flightId") Integer flightId);
+}

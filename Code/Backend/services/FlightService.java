@@ -11,10 +11,12 @@ import com.example.lowflightzone.exceptions.FlightException;
 import com.example.lowflightzone.exceptions.ValidationException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import lombok.extern.slf4j.Slf4j;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 public class FlightService {
 
@@ -201,6 +203,26 @@ public class FlightService {
         );
 
         return flightDto;
+    }
+
+    @Autowired
+    private FlightViewHistoryService viewHistoryService;
+
+    public FlightDto getFlightById(Integer id, Integer userId) {
+        Flight flight = flightDao.findById(id)
+                .orElseThrow(() -> new FlightException(FLIGHT_NOT_FOUND_MESSAGE + id));
+
+        // Записываем просмотр
+        if (userId != null) {
+            try {
+                viewHistoryService.recordFlightView(userId, id);
+            } catch (Exception e) {
+                // Логируем ошибку, но не прерываем выполнение
+                log.warn("Failed to record flight view for user {} and flight {}", userId, id, e);
+            }
+        }
+
+        return convertToDto(flight);
     }
 
     private Flight convertToEntity(FlightDto flightDto) {
