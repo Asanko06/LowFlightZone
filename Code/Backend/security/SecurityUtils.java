@@ -2,11 +2,13 @@ package com.example.lowflightzone.security;
 
 import com.example.lowflightzone.dao.UserDao;
 import com.example.lowflightzone.entity.User;
+import com.example.lowflightzone.exceptions.UserException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Component;
+
 import java.util.Optional;
 
 @Component
@@ -16,7 +18,7 @@ public class SecurityUtils {
     private final UserDao userDao;
 
     /**
-     * Получить текущего аутентифицированного пользователя
+     * 📌 Получить текущего аутентифицированного пользователя
      */
     public Optional<User> getCurrentUser() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
@@ -26,13 +28,11 @@ public class SecurityUtils {
             return Optional.empty();
         }
 
-        if (authentication.getPrincipal() instanceof UserDetails) {
-            UserDetails userDetails = (UserDetails) authentication.getPrincipal();
+        if (authentication.getPrincipal() instanceof UserDetails userDetails) {
             return userDao.findByEmail(userDetails.getUsername());
         }
 
-        if (authentication.getPrincipal() instanceof String) {
-            String username = (String) authentication.getPrincipal();
+        if (authentication.getPrincipal() instanceof String username) {
             return userDao.findByEmail(username);
         }
 
@@ -40,25 +40,34 @@ public class SecurityUtils {
     }
 
     /**
-     * Получить ID текущего пользователя
+     * 📌 Получить ID текущего пользователя
      */
     public Optional<Integer> getCurrentUserId() {
         return getCurrentUser().map(User::getId);
     }
 
     /**
-     * Получить текущего пользователя или выбросить исключение
+     * 📌 Получить текущего пользователя или выбросить исключение
      */
     public User getCurrentUserOrThrow() {
         return getCurrentUser()
-                .orElseThrow(() -> new RuntimeException("User not authenticated"));
+                .orElseThrow(() -> new UserException("Пользователь не аутентифицирован"));
     }
 
     /**
-     * Получить ID текущего пользователя или выбросить исключение
+     * 📌 Получить ID текущего пользователя или выбросить исключение
      */
     public Integer getCurrentUserIdOrThrow() {
         return getCurrentUserId()
-                .orElseThrow(() -> new RuntimeException("User not authenticated"));
+                .orElseThrow(() -> new UserException("Пользователь не аутентифицирован"));
+    }
+
+    /**
+     * 📌 ✅ Новый метод: получить email текущего пользователя
+     */
+    public String getCurrentUserEmailOrThrow() {
+        return getCurrentUser()
+                .map(User::getEmail)
+                .orElseThrow(() -> new UserException("Пользователь не аутентифицирован"));
     }
 }

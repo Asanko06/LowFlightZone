@@ -4,7 +4,9 @@ import com.example.lowflightzone.entity.FlightSubscription;
 import com.example.lowflightzone.repositories.FlightSubscriptionRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Repository;
+
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public class FlightSubscriptionDao {
@@ -24,27 +26,42 @@ public class FlightSubscriptionDao {
         return subscriptionRepository.findAll();
     }
 
+    public Optional<FlightSubscription> findActiveByUserEmailAndFlightNumber(String userEmail, String flightNumber) {
+        return subscriptionRepository.findActiveByUserEmailAndFlightNumber(userEmail, flightNumber);
+    }
+
     public FlightSubscription save(FlightSubscription subscription) {
         return subscriptionRepository.save(subscription);
     }
 
-    public List<FlightSubscription> findByFlightNumberAndStatus(String flightNumber,
-                                                                FlightSubscription.SubscriptionStatus status) {
-        // исправлено имя метода
-        return subscriptionRepository.findByFlight_FlightNumberAndFlight_Status(flightNumber, status);
+    public List<FlightSubscription> findByFlightNumberAndStatus(
+            String flightNumber,
+            FlightSubscription.SubscriptionStatus status
+    ) {
+        return subscriptionRepository.findByFlightNumberAndStatus(flightNumber, status);
     }
 
     public List<FlightSubscription> findByUserEmail(String userEmail) {
-        return subscriptionRepository.findByUserEmailAndStatus(userEmail,
-                FlightSubscription.SubscriptionStatus.ACTIVE);
+        return subscriptionRepository.findByUserEmailAndStatus(
+                userEmail,
+                FlightSubscription.SubscriptionStatus.ACTIVE
+        );
     }
 
     public boolean existsByFlightAndUser(String flightNumber, String userEmail) {
-        // исправлено имя метода
-        return subscriptionRepository.existsByFlightFlightNumberAndUserEmail(flightNumber, userEmail);
+        return subscriptionRepository.existsByFlight_FlightNumberAndUser_Email(flightNumber, userEmail);
     }
 
     public void deleteById(Integer id) {
         subscriptionRepository.deleteById(id);
     }
+
+    public boolean existsActiveByFlightAndUser(String flightNumber, String userEmail) {
+        return subscriptionRepository.existsByFlight_FlightNumberAndUser_EmailAndStatus(
+                flightNumber,
+                userEmail,
+                FlightSubscription.SubscriptionStatus.ACTIVE
+        );
+    }
+
 }

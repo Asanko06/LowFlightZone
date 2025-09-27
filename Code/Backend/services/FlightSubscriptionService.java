@@ -11,8 +11,11 @@ import com.example.lowflightzone.entity.FlightSubscription;
 import com.example.lowflightzone.entity.User;
 import com.example.lowflightzone.exceptions.FlightException;
 import com.example.lowflightzone.exceptions.SubscriptionException;
+import com.example.lowflightzone.security.SecurityUtils;
+import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -23,61 +26,112 @@ public class FlightSubscriptionService {
     private final FlightDao flightDao;
     private final NotificationService notificationService;
     private final UserDao userDao;
+    private final SecurityUtils securityUtils;
 
     @Autowired
     public FlightSubscriptionService(FlightSubscriptionDao subscriptionDao,
                                      FlightDao flightDao,
-                                     NotificationService notificationService, UserDao userDao) {
+                                     NotificationService notificationService,
+                                     UserDao userDao,
+                                     SecurityUtils securityUtils) {
         this.subscriptionDao = subscriptionDao;
         this.flightDao = flightDao;
         this.notificationService = notificationService;
         this.userDao = userDao;
+        this.securityUtils = securityUtils;
     }
 
-    public FlightSubscriptionDto subscribeToFlight(String flightNumber, String userEmail, String deviceToken) {
-        Flight flight = flightDao.findByFlightNumber(flightNumber)
-                .orElseThrow(() -> new FlightException("Рейс не найден: " + flightNumber));
-
-        if (subscriptionDao.existsByFlightAndUser(flightNumber, userEmail)) {
-            throw new SubscriptionException("Подписка уже существует для пользователя: " + userEmail);
+    /** Универсальная подписка: по flightId или flightNumber */
+    public FlightSubscriptionDto subscribeFlexible(Integer flightId, String flightNumber, String deviceToken) {
+        // 1️⃣ Определяем flightNumber
+        String resolvedFlightNumber = flightNumber;
+        if (resolvedFlightNumber == null && flightId != null) {
+            Flight flight = flightDao.findById(flightId)
+                    .orElseThrow(() -> new FlightException("Рейс не найден: id=" + flightId));
+            resolvedFlightNumber = flight.getFlightNumber();
         }
 
-        // ищем пользователя по email
+        if (resolvedFlightNumber == null || resolvedFlightNumber.isBlank()) {
+            throw new SubscriptionException("Не передан flightId или flightNumber");
+        }
+
+        // ✅ Делаем копию, которую можно безопасно использовать в лямбдах
+        final String finalFlightNumber = resolvedFlightNumber;
+
+        // 2️⃣ Получаем текущего пользователя
+        User current = securityUtils.getCurrentUserOrThrow();
+        String userEmail = current.getEmail();
+
+        // 3️⃣ Проверяем, существует ли подписка
+        if (subscriptionDao.existsActiveByFlightAndUser(resolvedFlightNumber, userEmail)) {
+            throw new SubscriptionException("Активная подписка уже существует для пользователя: " + userEmail);
+        }
+
+        // 4️⃣ Получаем сущности
+        Flight flight = flightDao.findByFlightNumber(finalFlightNumber)
+                .orElseThrow(() -> new FlightException("Рейс не найден: " + finalFlightNumber));
+
         User user = userDao.findByEmail(userEmail)
                 .orElseThrow(() -> new SubscriptionException("Пользователь не найден: " + userEmail));
 
+        // 5️⃣ Создаём и сохраняем подписку
         FlightSubscription subscription = new FlightSubscription();
         subscription.setFlight(flight);
         subscription.setUser(user);
         subscription.setNotificationTypes("DELAY,CANCELLATION,STATUS_CHANGE");
 
-        FlightSubscription savedSubscription = subscriptionDao.save(subscription);
+        FlightSubscription saved = subscriptionDao.save(subscription);
+        notificationService.sendSubscriptionConfirmation(saved);
 
-        notificationService.sendSubscriptionConfirmation(savedSubscription);
-
-        return convertToDto(savedSubscription);
+        return convertToDto(saved);
     }
 
 
-    public void unsubscribeFromFlight(Integer subscriptionId) {
-        FlightSubscription subscription = subscriptionDao.findAll().stream()
-                .filter(s -> s.getId().equals(subscriptionId))
-                .findFirst()
-                .orElseThrow(() -> new SubscriptionException("Подписка не найдена: " + subscriptionId));
+    /** Универсальная отписка: subscriptionId или (flightId / flightNumber) для текущего пользователя */
+    @Transactional
+    public void unsubscribeFlexible(Integer subscriptionId, Integer flightId, String flightNumber) {
+        String resolvedFlightNumber = flightNumber;
 
-        subscription.setStatus(FlightSubscription.SubscriptionStatus.CANCELLED);
-        subscriptionDao.save(subscription);
+        if ((resolvedFlightNumber == null || resolvedFlightNumber.isBlank()) && flightId != null) {
+            Flight flight = flightDao.findById(flightId)
+                    .orElseThrow(() -> new FlightException("Рейс не найден: id=" + flightId));
+            resolvedFlightNumber = flight.getFlightNumber();
+        }
+
+        if (subscriptionId != null) {
+            FlightSubscription sub = subscriptionDao.findAll().stream()
+                    .filter(s -> s.getId().equals(subscriptionId))
+                    .findFirst()
+                    .orElseThrow(() -> new SubscriptionException("Подписка не найдена: id=" + subscriptionId));
+            sub.setStatus(FlightSubscription.SubscriptionStatus.CANCELLED);
+            subscriptionDao.save(sub);
+            return;
+        }
+
+        if (resolvedFlightNumber == null || resolvedFlightNumber.isBlank()) {
+            throw new SubscriptionException("Не передан subscriptionId или flightId/flightNumber");
+        }
+
+        String userEmail = securityUtils.getCurrentUserOrThrow().getEmail();
+
+        final String finalFlightNumber = resolvedFlightNumber;
+
+        FlightSubscription sub = subscriptionDao
+                .findActiveByUserEmailAndFlightNumber(userEmail, finalFlightNumber)
+                .orElseThrow(() -> new SubscriptionException(
+                        "Активная подписка не найдена: " + userEmail + " / " + finalFlightNumber));
+
+
+        sub.setStatus(FlightSubscription.SubscriptionStatus.CANCELLED);
+        subscriptionDao.save(sub);
     }
+
+
+
+    // ----- Прочие методы (без изменений по сути) -----
 
     public List<FlightSubscriptionDto> getUserSubscriptions(String userEmail) {
         return subscriptionDao.findByUserEmail(userEmail).stream()
-                .map(this::convertToDto)
-                .collect(Collectors.toList());
-    }
-
-    public List<FlightSubscriptionDto> getSubscriptionsForFlight(String flightNumber) {
-        return subscriptionDao.findByFlightNumberAndStatus(flightNumber,
-                        FlightSubscription.SubscriptionStatus.ACTIVE).stream()
                 .map(this::convertToDto)
                 .collect(Collectors.toList());
     }
@@ -88,24 +142,30 @@ public class FlightSubscriptionService {
                 .collect(Collectors.toList());
     }
 
+    public List<FlightSubscriptionDto> getSubscriptionsForFlight(String flightNumber) {
+        return subscriptionDao.findByFlightNumberAndStatus(
+                        flightNumber, FlightSubscription.SubscriptionStatus.ACTIVE)
+                .stream()
+                .map(this::convertToDto)
+                .collect(Collectors.toList());
+    }
+
     private FlightSubscriptionDto convertToDto(FlightSubscription subscription) {
         FlightSubscriptionDto dto = new FlightSubscriptionDto();
         dto.setId(subscription.getId());
 
-        // Flight -> FlightDto (упрощённая конвертация)
         Flight flight = subscription.getFlight();
         FlightDto flightDto = new FlightDto();
         flightDto.setId(flight.getId());
         flightDto.setFlightNumber(flight.getFlightNumber());
         flightDto.setAirline(flight.getAirline());
-        flightDto.setStatus(flight.getStatus().toString());
+        flightDto.setStatus(flight.getStatus() != null ? flight.getStatus().toString() : null);
         flightDto.setScheduledDeparture(flight.getScheduledDeparture());
         flightDto.setScheduledArrival(flight.getScheduledArrival());
         flightDto.setEstimatedDeparture(flight.getEstimatedDeparture());
         flightDto.setEstimatedArrival(flight.getEstimatedArrival());
         dto.setFlight(flightDto);
 
-        // User -> UserDto (упрощённая конвертация)
         User user = subscription.getUser();
         UserDto userDto = new UserDto();
         userDto.setId(user.getId());
@@ -114,7 +174,7 @@ public class FlightSubscriptionService {
         userDto.setLastName(user.getLastName());
         dto.setUser(userDto);
 
-        dto.setStatus(subscription.getStatus().toString());
+        dto.setStatus(subscription.getStatus() != null ? subscription.getStatus().toString() : null);
         dto.setNotificationTypes(subscription.getNotificationTypes());
         dto.setCreatedAt(subscription.getCreatedAt());
         dto.setLastNotifiedAt(subscription.getLastNotifiedAt());
@@ -123,7 +183,4 @@ public class FlightSubscriptionService {
 
         return dto;
     }
-
-
-
 }

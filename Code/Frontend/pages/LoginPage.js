@@ -270,7 +270,7 @@ const appNameStyle = {
 const airplaneContainerStyle = {
     marginTop: '2rem',
     position: 'relative',
-    bottom: '10px',
+    bottom: '15px',
     left: '50%',
     transform: 'translateX(-50%)',
     overflow: 'hidden',

@@ -11,6 +11,7 @@ import java.util.List;
 @Getter
 @Setter
 public class Airport {
+
     @Id
     @Column(name = "iata_code", length = 3)
     private String iataCode;
@@ -33,15 +34,12 @@ public class Airport {
     @Column(name = "timezone")
     private String timezone;
 
-    // Связь с терминалами (One-to-Many)
     @OneToMany(mappedBy = "airport", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<AirportTerminalInfo> terminals = new ArrayList<>();
 
-    // Связь с рейсами вылета (One-to-Many)
     @OneToMany(mappedBy = "departureAirport", fetch = FetchType.LAZY)
     private List<Flight> departingFlights = new ArrayList<>();
 
-    // Связь с рейсами прилета (One-to-Many)
     @OneToMany(mappedBy = "arrivalAirport", fetch = FetchType.LAZY)
     private List<Flight> arrivingFlights = new ArrayList<>();
 }

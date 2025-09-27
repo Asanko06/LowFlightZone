@@ -21,9 +21,10 @@ public class FlightViewHistory {
     private User user;
 
     // Связь с рейсом
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "flight_id", nullable = false)
     private Flight flight;
+
 
     @Column(name = "viewed_at", nullable = false)
     private LocalDateTime viewedAt;

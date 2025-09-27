@@ -3,6 +3,8 @@ package com.example.lowflightzone.services;
 import com.example.lowflightzone.dao.FlightDao;
 import com.example.lowflightzone.dao.FlightViewHistoryDao;
 import com.example.lowflightzone.dao.UserDao;
+import com.example.lowflightzone.dto.AirportDto;
+import com.example.lowflightzone.dto.FlightDto;
 import com.example.lowflightzone.dto.FlightViewHistoryDto;
 import com.example.lowflightzone.entity.Flight;
 import com.example.lowflightzone.entity.FlightViewHistory;
@@ -14,6 +16,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -29,12 +32,8 @@ public class FlightViewHistoryService {
     private final FlightDao flightDao;
     private final SecurityUtils securityUtils;
 
-    /**
-     * Записать просмотр рейса для текущего пользователя
-     */
     @Transactional
     public FlightViewHistoryDto recordFlightView(Integer flightId) {
-        // Получаем ID текущего аутентифицированного пользователя
         Integer userId = securityUtils.getCurrentUserIdOrThrow();
 
         User user = userDao.findById(userId)
@@ -46,9 +45,6 @@ public class FlightViewHistoryService {
         return recordFlightView(user, flight);
     }
 
-    /**
-     * Записать просмотр рейса для конкретного пользователя (для админов)
-     */
     @Transactional
     public FlightViewHistoryDto recordFlightView(Integer userId, Integer flightId) {
         User user = userDao.findById(userId)
@@ -61,34 +57,18 @@ public class FlightViewHistoryService {
     }
 
     private FlightViewHistoryDto recordFlightView(User user, Flight flight) {
-        log.info("Recording flight view - User: {}, Flight: {}", user.getId(), flight.getId());
+        Optional<FlightViewHistory> existingView =
+                viewHistoryDao.findByUserIdAndFlightId(user.getId(), flight.getId());
 
-        Optional<FlightViewHistory> existingView = viewHistoryDao.findByUserIdAndFlightId(user.getId(), flight.getId());
+        FlightViewHistory view = existingView.orElseGet(FlightViewHistory::new);
+        view.setUser(user);
+        view.setFlight(flight);
+        view.setViewedAt(LocalDateTime.now());
+        view.setViewCount(existingView.map(v -> v.getViewCount() + 1).orElse(1));
 
-        FlightViewHistory viewHistory;
-        if (existingView.isPresent()) {
-            viewHistory = existingView.get();
-            viewHistory.setViewCount(viewHistory.getViewCount() + 1);
-            viewHistory.setViewedAt(LocalDateTime.now());
-            log.debug("Updating existing view record. Count: {}", viewHistory.getViewCount());
-        } else {
-            viewHistory = new FlightViewHistory();
-            viewHistory.setUser(user);
-            viewHistory.setFlight(flight);
-            viewHistory.setViewedAt(LocalDateTime.now());
-            viewHistory.setViewCount(1);
-            log.debug("Creating new view record");
-        }
-
-        FlightViewHistory savedView = viewHistoryDao.saveOrUpdateView(viewHistory);
-        log.info("View recorded successfully. View count: {}", savedView.getViewCount());
-
-        return convertToDto(savedView);
+        return convertToDto(viewHistoryDao.saveOrUpdateView(view));
     }
 
-    /**
-     * Получить историю просмотров текущего пользователя
-     */
     public List<FlightViewHistoryDto> getCurrentUserRecentViews(int limit) {
         Integer userId = securityUtils.getCurrentUserIdOrThrow();
         return viewHistoryDao.getRecentViewsByUserId(userId, limit).stream()
@@ -96,20 +76,8 @@ public class FlightViewHistoryService {
                 .collect(Collectors.toList());
     }
 
-    /**
-     * Получить историю просмотров конкретного пользователя (для админов)
-     */
     public List<FlightViewHistoryDto> getRecentViews(Integer userId, int limit) {
         return viewHistoryDao.getRecentViewsByUserId(userId, limit).stream()
-                .map(this::convertToDto)
-                .collect(Collectors.toList());
-    }
-
-    // Остальные методы аналогично обновляем...
-
-    public List<FlightViewHistoryDto> getCurrentUserMostViewedFlights(int limit) {
-        Integer userId = securityUtils.getCurrentUserIdOrThrow();
-        return viewHistoryDao.getMostViewedByUserId(userId, limit).stream()
                 .map(this::convertToDto)
                 .collect(Collectors.toList());
     }
@@ -121,24 +89,54 @@ public class FlightViewHistoryService {
                 .collect(Collectors.toList());
     }
 
-    public Integer getCurrentUserFlightViewCount(Integer flightId) {
-        Integer userId = securityUtils.getCurrentUserIdOrThrow();
-        return viewHistoryDao.getViewCount(userId, flightId);
-    }
-
     @Transactional
     public void clearCurrentUserHistory() {
         Integer userId = securityUtils.getCurrentUserIdOrThrow();
-        List<FlightViewHistory> userHistory = viewHistoryDao.getUserViewHistory(userId);
-        userHistory.forEach(history -> viewHistoryDao.deleteViewHistory(history.getId()));
-        log.info("Cleared view history for user: {}", userId);
+        viewHistoryDao.getUserViewHistory(userId)
+                .forEach(h -> viewHistoryDao.deleteViewHistory(h.getId()));
     }
 
-    private FlightViewHistoryDto convertToDto(FlightViewHistory viewHistory) {
+    // полное заполнение DTO — включая аэропорты
+    private FlightViewHistoryDto convertToDto(FlightViewHistory vh) {
         FlightViewHistoryDto dto = new FlightViewHistoryDto();
-        dto.setId(viewHistory.getId());
-        dto.setViewedAt(viewHistory.getViewedAt());
-        dto.setViewCount(viewHistory.getViewCount());
+        dto.setId(vh.getId());
+        dto.setViewedAt(vh.getViewedAt());
+        dto.setViewCount(vh.getViewCount());
+
+        Flight f = vh.getFlight();
+        if (f != null) {
+            FlightDto fd = new FlightDto();
+            fd.setId(f.getId());
+            fd.setFlightNumber(f.getFlightNumber());
+            fd.setAirline(f.getAirline());
+            fd.setScheduledDeparture(f.getScheduledDeparture());
+            fd.setScheduledArrival(f.getScheduledArrival());
+            fd.setEstimatedDeparture(f.getEstimatedDeparture());
+            fd.setEstimatedArrival(f.getEstimatedArrival());
+            fd.setActualDeparture(f.getActualDeparture());
+            fd.setActualArrival(f.getActualArrival());
+            fd.setStatus(f.getStatus() != null ? f.getStatus().name() : null);
+
+            if (f.getDepartureAirport() != null) {
+                AirportDto dep = new AirportDto();
+                dep.setIataCode(f.getDepartureAirport().getIataCode());
+                dep.setName(f.getDepartureAirport().getName());
+                dep.setCity(f.getDepartureAirport().getCity());
+                dep.setCountry(f.getDepartureAirport().getCountry());
+                fd.setDepartureAirport(dep);
+            }
+            if (f.getArrivalAirport() != null) {
+                AirportDto arr = new AirportDto();
+                arr.setIataCode(f.getArrivalAirport().getIataCode());
+                arr.setName(f.getArrivalAirport().getName());
+                arr.setCity(f.getArrivalAirport().getCity());
+                arr.setCountry(f.getArrivalAirport().getCountry());
+                fd.setArrivalAirport(arr);
+            }
+
+            dto.setFlight(fd);
+        }
+
         return dto;
     }
 }

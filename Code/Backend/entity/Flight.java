@@ -22,14 +22,12 @@ public class Flight {
     @Column(name = "airline", nullable = false, length = 50)
     private String airline;
 
-    // Связь с аэропортом вылета (Many-to-One)
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "departure_airport_code", nullable = false)
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "departure_airport", referencedColumnName = "iata_code", nullable = false)
     private Airport departureAirport;
 
-    // Связь с аэропортом прилета (Many-to-One)
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "arrival_airport_code", nullable = false)
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "arrival_airport", referencedColumnName = "iata_code", nullable = false)
     private Airport arrivalAirport;
 
     @Column(name = "scheduled_departure")
@@ -50,10 +48,6 @@ public class Flight {
     @Column(name = "actual_arrival")
     private LocalDateTime actualArrival;
 
-    @Enumerated(EnumType.STRING)
-    @Column(name = "status", length = 20)
-    private FlightStatus status;
-
     @Column(name = "delay_minutes")
     private Integer delayMinutes;
 
@@ -63,10 +57,13 @@ public class Flight {
     @Column(name = "gate", length = 10)
     private String gate;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "status", length = 20)
+    private FlightStatus status;
+
     @Column(name = "last_updated")
     private LocalDateTime lastUpdated;
 
-    // Связь с подписками (One-to-Many)
     @OneToMany(mappedBy = "flight", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<FlightSubscription> subscriptions = new ArrayList<>();
 
@@ -84,5 +81,9 @@ public class Flight {
         if (delayMinutes == null) {
             delayMinutes = 0;
         }
+    }
+
+    public int getSubscriptionCount() {
+        return subscriptions != null ? subscriptions.size() : 0;
     }
 }

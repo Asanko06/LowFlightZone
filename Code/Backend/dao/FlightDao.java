@@ -18,6 +18,10 @@ public class FlightDao {
         this.flightRepository = flightRepository;
     }
 
+    public boolean existsByFlightNumber(String flightNumber) {
+        return flightRepository.existsByFlightNumber(flightNumber);
+    }
+
     public List<Flight> findAll() {
         return flightRepository.findAll();
     }
@@ -30,18 +34,6 @@ public class FlightDao {
         return flightRepository.findByFlightNumber(flightNumber);
     }
 
-    public List<Flight> findByDepartureAirport(String airport) {
-        return flightRepository.findByDepartureAirport_IataCode(airport);
-    }
-
-    public List<Flight> findByArrivalAirport(String airport) {
-        return flightRepository.findByArrivalAirport_IataCode(airport);
-    }
-
-    public List<Flight> findByStatus(Flight.FlightStatus status) {
-        return flightRepository.findByStatus(status);
-    }
-
     public Flight save(Flight flight) {
         return flightRepository.save(flight);
     }
@@ -49,9 +41,5 @@ public class FlightDao {
     @Transactional
     public void deleteById(Integer id) {
         flightRepository.deleteById(id);
-    }
-
-    public boolean existsByFlightNumber(String flightNumber) {
-        return flightRepository.existsByFlightNumber(flightNumber);
     }
 }
