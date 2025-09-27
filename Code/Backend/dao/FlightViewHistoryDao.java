@@ -3,6 +3,7 @@ package com.example.lowflightzone.dao;
 import com.example.lowflightzone.entity.FlightViewHistory;
 import com.example.lowflightzone.repositories.FlightViewHistoryRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Repository;
 import java.util.List;
 import java.util.Optional;
@@ -26,11 +27,15 @@ public class FlightViewHistoryDao {
     }
 
     public List<FlightViewHistory> getRecentViewsByUserId(Integer userId, int limit) {
-        return viewHistoryRepository.findRecentByUserId(userId, limit);
+        return viewHistoryRepository
+                .findByUser_IdOrderByViewedAtDesc(userId, PageRequest.of(0, limit))
+                .getContent();
     }
 
     public List<FlightViewHistory> getMostViewedByUserId(Integer userId, int limit) {
-        return viewHistoryRepository.findMostViewedByUserId(userId, limit);
+        return viewHistoryRepository
+                .findByUser_IdOrderByViewCountDescViewedAtDesc(userId, PageRequest.of(0, limit))
+                .getContent();
     }
 
     public List<FlightViewHistory> getUserViewHistory(Integer userId) {

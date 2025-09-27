@@ -52,6 +52,11 @@ public class FlightSubscriptionDao {
         return subscriptionRepository.existsByFlight_FlightNumberAndUser_Email(flightNumber, userEmail);
     }
 
+    // ✅ Новый: получить последнюю подписку (любой статус)
+    public Optional<FlightSubscription> findLatestByFlightNumberAndUserEmail(String flightNumber, String email) {
+        return subscriptionRepository.findFirstByFlight_FlightNumberAndUser_EmailOrderByIdDesc(flightNumber, email);
+    }
+
     public void deleteById(Integer id) {
         subscriptionRepository.deleteById(id);
     }

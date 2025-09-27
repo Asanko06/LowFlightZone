@@ -6,7 +6,13 @@ import lombok.Setter;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "flight_subscriptions")
+@Table(
+        name = "flight_subscriptions",
+        uniqueConstraints = @UniqueConstraint(
+                columnNames = {"flight_id", "user_id", "status"}
+        )
+)
+
 @Getter
 @Setter
 public class FlightSubscription {
@@ -26,6 +32,9 @@ public class FlightSubscription {
 
     @Column(name = "notification_types")
     private String notificationTypes;
+
+    @Column(name = "device_token")
+    private String deviceToken;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "status", length = 20)

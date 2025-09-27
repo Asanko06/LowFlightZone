@@ -1,6 +1,8 @@
 package com.example.lowflightzone.repositories;
 
 import com.example.lowflightzone.entity.FlightViewHistory;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -18,14 +20,9 @@ public interface FlightViewHistoryRepository extends JpaRepository<FlightViewHis
     @Query("SELECT fvh FROM FlightViewHistory fvh WHERE fvh.user.id = :userId ORDER BY fvh.viewedAt DESC")
     List<FlightViewHistory> findByUserIdOrderByViewedAtDesc(@Param("userId") Integer userId);
 
-    // Получить последние N просмотренных рейсов
-    @Query("SELECT fvh FROM FlightViewHistory fvh WHERE fvh.user.id = :userId ORDER BY fvh.viewedAt DESC LIMIT :limit")
-    List<FlightViewHistory> findRecentByUserId(@Param("userId") Integer userId, @Param("limit") int limit);
+    Page<FlightViewHistory> findByUser_IdOrderByViewedAtDesc(Integer userId, Pageable pageable);
 
-    // Получить самые часто просматриваемые рейсы
-    @Query("SELECT fvh FROM FlightViewHistory fvh WHERE fvh.user.id = :userId ORDER BY fvh.viewCount DESC, fvh.viewedAt DESC LIMIT :limit")
-    List<FlightViewHistory> findMostViewedByUserId(@Param("userId") Integer userId, @Param("limit") int limit);
-
+    Page<FlightViewHistory> findByUser_IdOrderByViewCountDescViewedAtDesc(Integer userId, Pageable pageable);
     // Проверить, существует ли запись
     boolean existsByUserIdAndFlightId(Integer userId, Integer flightId);
 

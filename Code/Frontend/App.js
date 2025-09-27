@@ -9,70 +9,86 @@ import Profile from './pages/Profile';
 import LoginPage from './pages/LoginPage';
 import './styles/App.css';
 
-// Компонент который решает показывать Header или нет
+// Компонент Layout управляет Header
 const Layout = ({ children }) => {
-  const location = useLocation();
-  const showHeader = location.pathname !== '/login';
-
-  return (
-      <div className="App">
-        {showHeader && <Header />}
-        <main>
-          {children}
-        </main>
-      </div>
-  );
+    const location = useLocation();
+    const showHeader = location.pathname !== '/login';
+    return (
+        <div className="App">
+            {showHeader && <Header />}
+            <main>{children}</main>
+        </div>
+    );
 };
 
+// Защита маршрутов
 const ProtectedRoute = ({ children }) => {
-  const { isAuthenticated } = useAuth();
-  return isAuthenticated ? children : <Navigate to="/login" />;
+    const { isAuthenticated } = useAuth();
+    return isAuthenticated ? children : <Navigate to="/login" replace />;
 };
 
 function App() {
-  return (
-      <AuthProvider>
-        <Router>
-          <Routes>
-            {/* Страница логина без Header */}
-            <Route path="/login" element={<LoginPage />} />
+    return (
+        <AuthProvider>
+            <Router>
+                <Routes>
+                    {/* 📌 Главная страница теперь защищена */}
+                    <Route
+                        path="/"
+                        element={
+                            <ProtectedRoute>
+                                <Layout>
+                                    <Home />
+                                </Layout>
+                            </ProtectedRoute>
+                        }
+                    />
 
-            {/* Защищенные маршруты с Header */}
-            <Route path="/" element={
-              <ProtectedRoute>
-                <Layout>
-                  <Home />
-                </Layout>
-              </ProtectedRoute>
-            } />
+                    {/* 📌 Страница логина */}
+                    <Route path="/login" element={<LoginPage />} />
 
-            <Route path="/flights" element={
-              <ProtectedRoute>
-                <Layout>
-                  <Flights />
-                </Layout>
-              </ProtectedRoute>
-            } />
+                    {/* ✈️ Список рейсов */}
+                    <Route
+                        path="/flights"
+                        element={
+                            <ProtectedRoute>
+                                <Layout>
+                                    <Flights />
+                                </Layout>
+                            </ProtectedRoute>
+                        }
+                    />
 
-            <Route path="/subscriptions" element={
-              <ProtectedRoute>
-                <Layout>
-                  <Subscriptions />
-                </Layout>
-              </ProtectedRoute>
-            } />
+                    {/* 📬 Подписки */}
+                    <Route
+                        path="/subscriptions"
+                        element={
+                            <ProtectedRoute>
+                                <Layout>
+                                    <Subscriptions />
+                                </Layout>
+                            </ProtectedRoute>
+                        }
+                    />
 
-            <Route path="/profile" element={
-              <ProtectedRoute>
-                <Layout>
-                  <Profile />
-                </Layout>
-              </ProtectedRoute>
-            } />
-          </Routes>
-        </Router>
-      </AuthProvider>
-  );
+                    {/* 👤 Профиль */}
+                    <Route
+                        path="/profile"
+                        element={
+                            <ProtectedRoute>
+                                <Layout>
+                                    <Profile />
+                                </Layout>
+                            </ProtectedRoute>
+                        }
+                    />
+
+                    {/* 🌐 Неизвестные маршруты → логин */}
+                    <Route path="*" element={<Navigate to="/login" replace />} />
+                </Routes>
+            </Router>
+        </AuthProvider>
+    );
 }
 
 export default App;

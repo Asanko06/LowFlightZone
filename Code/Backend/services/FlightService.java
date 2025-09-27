@@ -6,6 +6,7 @@ import com.example.lowflightzone.dto.AirportDto;
 import com.example.lowflightzone.dto.FlightDto;
 import com.example.lowflightzone.entity.Airport;
 import com.example.lowflightzone.entity.Flight;
+import com.example.lowflightzone.entity.FlightSubscription;
 import com.example.lowflightzone.exceptions.AirportException;
 import com.example.lowflightzone.exceptions.FlightException;
 import com.example.lowflightzone.exceptions.ValidationException;
@@ -162,7 +163,7 @@ public class FlightService {
         flightDto.setFlightNumber(flight.getFlightNumber());
         flightDto.setAirline(flight.getAirline());
 
-        // Конвертируем Airport entity в AirportDto
+        // ✈️ Конвертируем Airport entity в AirportDto
         if (flight.getDepartureAirport() != null) {
             AirportDto departureDto = new AirportDto();
             departureDto.setIataCode(flight.getDepartureAirport().getIataCode());
@@ -187,15 +188,21 @@ public class FlightService {
         flightDto.setEstimatedArrival(flight.getEstimatedArrival());
         flightDto.setActualDeparture(flight.getActualDeparture());
         flightDto.setActualArrival(flight.getActualArrival());
-        flightDto.setStatus(flight.getStatus().toString());
+        flightDto.setStatus(flight.getStatus() != null ? flight.getStatus().toString() : null);
         flightDto.setDelayMinutes(flight.getDelayMinutes());
         flightDto.setTerminal(flight.getTerminal());
         flightDto.setGate(flight.getGate());
         flightDto.setLastUpdated(flight.getLastUpdated());
 
-        flightDto.setSubscriptionCount(
-                flight.getSubscriptions() != null ? flight.getSubscriptions().size() : 0
-        );
+        // ✅ Считаем только активные подписки
+        if (flight.getSubscriptions() != null) {
+            long activeSubscriptions = flight.getSubscriptions().stream()
+                    .filter(sub -> sub.getStatus() == FlightSubscription.SubscriptionStatus.ACTIVE)
+                    .count();
+            flightDto.setSubscriptionCount((int) activeSubscriptions);
+        } else {
+            flightDto.setSubscriptionCount(0);
+        }
 
         return flightDto;
     }

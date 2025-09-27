@@ -7,10 +7,12 @@ import com.example.lowflightzone.dto.AirportDto;
 import com.example.lowflightzone.dto.FlightDto;
 import com.example.lowflightzone.dto.FlightViewHistoryDto;
 import com.example.lowflightzone.entity.Flight;
+import com.example.lowflightzone.entity.FlightSubscription;
 import com.example.lowflightzone.entity.FlightViewHistory;
 import com.example.lowflightzone.entity.User;
 import com.example.lowflightzone.exceptions.FlightException;
 import com.example.lowflightzone.exceptions.UserException;
+import com.example.lowflightzone.repositories.FlightSubscriptionRepository;
 import com.example.lowflightzone.security.SecurityUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -31,6 +33,7 @@ public class FlightViewHistoryService {
     private final UserDao userDao;
     private final FlightDao flightDao;
     private final SecurityUtils securityUtils;
+    private final FlightSubscriptionRepository subscriptionRepo;
 
     @Transactional
     public FlightViewHistoryDto recordFlightView(Integer flightId) {
@@ -96,7 +99,7 @@ public class FlightViewHistoryService {
                 .forEach(h -> viewHistoryDao.deleteViewHistory(h.getId()));
     }
 
-    // полное заполнение DTO — включая аэропорты
+    // 📌 Полное заполнение DTO + безопасная проверка подписки
     private FlightViewHistoryDto convertToDto(FlightViewHistory vh) {
         FlightViewHistoryDto dto = new FlightViewHistoryDto();
         dto.setId(vh.getId());
@@ -117,6 +120,7 @@ public class FlightViewHistoryService {
             fd.setActualArrival(f.getActualArrival());
             fd.setStatus(f.getStatus() != null ? f.getStatus().name() : null);
 
+            // ✈️ Отправной аэропорт
             if (f.getDepartureAirport() != null) {
                 AirportDto dep = new AirportDto();
                 dep.setIataCode(f.getDepartureAirport().getIataCode());
@@ -125,6 +129,8 @@ public class FlightViewHistoryService {
                 dep.setCountry(f.getDepartureAirport().getCountry());
                 fd.setDepartureAirport(dep);
             }
+
+            // 🛬 Аэропорт прибытия
             if (f.getArrivalAirport() != null) {
                 AirportDto arr = new AirportDto();
                 arr.setIataCode(f.getArrivalAirport().getIataCode());
@@ -134,9 +140,25 @@ public class FlightViewHistoryService {
                 fd.setArrivalAirport(arr);
             }
 
+            // ❤️ Проверяем, подписан ли текущий пользователь на рейс
+            boolean isSubscribed = false;
+            try {
+                String email = securityUtils.getCurrentUserOrThrow().getEmail();
+                isSubscribed = subscriptionRepo.existsByFlight_FlightNumberAndUser_EmailAndStatus(
+                        f.getFlightNumber(),
+                        email,
+                        FlightSubscription.SubscriptionStatus.ACTIVE
+                );
+            } catch (Exception e) {
+                // если пользователь не авторизован — оставляем false
+                isSubscribed = false;
+            }
+            fd.setSubscribed(isSubscribed);
+
             dto.setFlight(fd);
         }
 
         return dto;
     }
+
 }

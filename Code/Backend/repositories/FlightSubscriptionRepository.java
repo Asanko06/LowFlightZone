@@ -36,6 +36,12 @@ public interface FlightSubscriptionRepository extends JpaRepository<FlightSubscr
             @Param("flightNumber") String flightNumber
     );
 
+    // ✅ Новый метод: находим последнюю подписку по user + flight (любой статус)
+    Optional<FlightSubscription> findFirstByFlight_FlightNumberAndUser_EmailOrderByIdDesc(
+            String flightNumber,
+            String email
+    );
+
     boolean existsByFlight_FlightNumberAndUser_EmailAndStatus(
             String flightNumber,
             String userEmail,

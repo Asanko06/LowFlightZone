@@ -17,6 +17,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
@@ -41,48 +42,69 @@ public class FlightSubscriptionService {
         this.securityUtils = securityUtils;
     }
 
-    /** Универсальная подписка: по flightId или flightNumber */
+    /**
+     * Универсальная подписка: по flightId или flightNumber.
+     * ✅ Поведение: если была подписка со статусом CANCELLED — меняем её на ACTIVE (реактивация),
+     *               если активной нет и прошлых не было — создаём новую.
+     */
     public FlightSubscriptionDto subscribeFlexible(Integer flightId, String flightNumber, String deviceToken) {
-        // 1️⃣ Определяем flightNumber
+        // 1) Определяем flightNumber
         String resolvedFlightNumber = flightNumber;
         if (resolvedFlightNumber == null && flightId != null) {
             Flight flight = flightDao.findById(flightId)
                     .orElseThrow(() -> new FlightException("Рейс не найден: id=" + flightId));
             resolvedFlightNumber = flight.getFlightNumber();
         }
-
         if (resolvedFlightNumber == null || resolvedFlightNumber.isBlank()) {
             throw new SubscriptionException("Не передан flightId или flightNumber");
         }
-
-        // ✅ Делаем копию, которую можно безопасно использовать в лямбдах
         final String finalFlightNumber = resolvedFlightNumber;
 
-        // 2️⃣ Получаем текущего пользователя
+        // 2) Текущий пользователь
         User current = securityUtils.getCurrentUserOrThrow();
         String userEmail = current.getEmail();
 
-        // 3️⃣ Проверяем, существует ли подписка
-        if (subscriptionDao.existsActiveByFlightAndUser(resolvedFlightNumber, userEmail)) {
+        // 3) Если уже есть ACTIVE — запрещаем повтор
+        if (subscriptionDao.existsActiveByFlightAndUser(finalFlightNumber, userEmail)) {
             throw new SubscriptionException("Активная подписка уже существует для пользователя: " + userEmail);
         }
 
-        // 4️⃣ Получаем сущности
+        // 4) Получаем сущности рейса и пользователя
         Flight flight = flightDao.findByFlightNumber(finalFlightNumber)
                 .orElseThrow(() -> new FlightException("Рейс не найден: " + finalFlightNumber));
 
         User user = userDao.findByEmail(userEmail)
                 .orElseThrow(() -> new SubscriptionException("Пользователь не найден: " + userEmail));
 
-        // 5️⃣ Создаём и сохраняем подписку
-        FlightSubscription subscription = new FlightSubscription();
-        subscription.setFlight(flight);
-        subscription.setUser(user);
-        subscription.setNotificationTypes("DELAY,CANCELLATION,STATUS_CHANGE");
+        // 5) ✅ Реактивация: ищем последнюю подписку (любой статус)
+        Optional<FlightSubscription> latestOpt =
+                subscriptionDao.findLatestByFlightNumberAndUserEmail(finalFlightNumber, userEmail);
 
-        FlightSubscription saved = subscriptionDao.save(subscription);
+        FlightSubscription saved;
+        if (latestOpt.isPresent()) {
+            // Было ранее — реактивируем
+            FlightSubscription existing = latestOpt.get();
+            existing.setStatus(FlightSubscription.SubscriptionStatus.ACTIVE);
+            existing.setNotificationTypes("DELAY,CANCELLATION,STATUS_CHANGE");
+            if (deviceToken != null && !deviceToken.isBlank()) {
+                existing.setDeviceToken(deviceToken);
+            }
+            // Можно обновить "updatedAt", если поле есть
+            saved = subscriptionDao.save(existing);
+        } else {
+            // Не было — создаём новую
+            FlightSubscription sub = new FlightSubscription();
+            sub.setFlight(flight);
+            sub.setUser(user);
+            sub.setStatus(FlightSubscription.SubscriptionStatus.ACTIVE);
+            sub.setNotificationTypes("DELAY,CANCELLATION,STATUS_CHANGE");
+            if (deviceToken != null && !deviceToken.isBlank()) {
+                sub.setDeviceToken(deviceToken);
+            }
+            saved = subscriptionDao.save(sub);
+        }
+
         notificationService.sendSubscriptionConfirmation(saved);
-
         return convertToDto(saved);
     }
 

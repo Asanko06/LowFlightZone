@@ -56,7 +56,7 @@ const Home = () => {
             setRecentFlights(prevFlights =>
                 prevFlights.map(view =>
                     view?.flight?.id === flightId
-                        ? { ...view, flight: { ...view.flight, isSubscribed: !currentStatus } }
+                        ? { ...view, flight: { ...view.flight, subscribed: !currentStatus } }
                         : view
                 )
             );
@@ -82,7 +82,7 @@ const Home = () => {
                 flightNumber: 'SU1160',
                 departureAirport: { city: 'Москва', iataCode: 'SVO' },
                 arrivalAirport: { city: 'Стамбул', iataCode: 'IST' },
-                isSubscribed: true
+                subscribed: true
             },
             viewedAt: new Date().toISOString(),
             viewCount: 1
@@ -193,12 +193,12 @@ const Home = () => {
                                     <button
                                         onClick={(e) => {
                                             e.stopPropagation();
-                                            toggleSubscription(flight.id, flight?.isSubscribed, flight?.flightNumber);
+                                            toggleSubscription(flight.id, flight?.subscribed, flight?.flightNumber);
                                         }}
                                         style={heartButtonStyle}
-                                        aria-label={flight?.isSubscribed ? 'Отписаться от рейса' : 'Подписаться на рейс'}
+                                        aria-label={flight?.subscribed ? 'Отписаться от рейса' : 'Подписаться на рейс'}
                                     >
-                                        {flight?.isSubscribed ? (
+                                        {flight?.subscribed ? (
                                             <svg width="24" height="24" viewBox="0 0 24 24" fill="black" stroke="black"
                                                  strokeWidth="1">
                                                 <path
@@ -427,6 +427,20 @@ styleSheet.insertRule(`
     box-shadow: 0 4px 8px rgba(0,0,0,0.15);
   }
 `, styleSheet.cssRules.length);
+
+try {
+    const styleSheet = document.styleSheets[0];
+    if (styleSheet) {
+        styleSheet.insertRule(`
+  [style*="${flightItemStyle.backgroundColor}"]:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+  }
+`, styleSheet.cssRules.length);
+    }
+} catch (e) {
+    console.warn("CSS hover rules not applied:", e);
+}
 
 styleSheet.insertRule(`
   [style*="${searchButtonStyle.backgroundColor}"]:hover {

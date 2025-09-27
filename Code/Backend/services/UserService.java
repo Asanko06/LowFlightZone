@@ -2,6 +2,7 @@ package com.example.lowflightzone.services;
 
 import com.example.lowflightzone.dao.UserDao;
 import com.example.lowflightzone.dto.UserDto;
+import com.example.lowflightzone.entity.FlightSubscription;
 import com.example.lowflightzone.entity.User;
 import com.example.lowflightzone.exceptions.UserException;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -76,8 +77,15 @@ public class UserService {
         dto.setDeviceToken(user.getDeviceToken());
         dto.setCreatedAt(user.getCreatedAt());
 
-        dto.setSubscriptions(subscriptionService.getSubscriptionsByUserId(user.getId()));
-        dto.setSubscriptionCount(user.getSubscriptions().size());
+        // ✅ Считаем только активные подписки пользователя
+        if (user.getSubscriptions() != null) {
+            long activeCount = user.getSubscriptions().stream()
+                    .filter(s -> s.getStatus() == FlightSubscription.SubscriptionStatus.ACTIVE)
+                    .count();
+            dto.setSubscriptionCount((int) activeCount);
+        } else {
+            dto.setSubscriptionCount(0);
+        }
 
         return dto;
     }
