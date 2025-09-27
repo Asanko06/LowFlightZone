@@ -9,6 +9,7 @@ import com.example.lowflightzone.entity.Flight;
 import com.example.lowflightzone.exceptions.AirportException;
 import com.example.lowflightzone.exceptions.FlightException;
 import com.example.lowflightzone.exceptions.ValidationException;
+import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import lombok.extern.slf4j.Slf4j;
@@ -46,12 +47,6 @@ public class FlightService {
             throw new FlightException("Рейсы с такими параметрами не найдены");
         }
         return flights;
-    }
-
-    public FlightDto getFlightById(Integer id) {
-        Flight flight = flightDao.findById(id)
-                .orElseThrow(() -> new FlightException(FLIGHT_NOT_FOUND_MESSAGE + id));
-        return convertToDto(flight);
     }
 
     public FlightDto getFlightByNumber(String flightNumber) {
@@ -203,6 +198,22 @@ public class FlightService {
         );
 
         return flightDto;
+    }
+
+    @Transactional
+    public FlightDto getFlightById(Integer id) {
+        Flight flight = flightDao.findById(id)
+                .orElseThrow(() -> new FlightException(FLIGHT_NOT_FOUND_MESSAGE + id));
+
+        // Записываем просмотр для текущего пользователя
+        try {
+            viewHistoryService.recordFlightView(id);
+        } catch (Exception e) {
+            // Логируем ошибку, но не прерываем выполнение
+            log.warn("Failed to record flight view for flight {}", id, e);
+        }
+
+        return convertToDto(flight);
     }
 
     @Autowired

@@ -88,7 +88,6 @@ const Home = () => {
 
             {/* Список недавних рейсов */}
             <div style={recentFlightsSectionStyle}>
-                <h2 style={sectionTitleStyle}>Недавние рейсы</h2>
                 <div style={flightsListStyle}>
                     {recentFlights.map(flight => (
                         <div key={flight.id} style={flightItemStyle}>

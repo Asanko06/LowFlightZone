@@ -1,0 +1,33 @@
+.profileButton:hover {
+    background-color: rgba(126, 191, 255, 0.1);
+}
+
+.profileCircle:hover {
+    border-color: #5a9de0;
+    transform: scale(1.05);
+}
+
+.dropdown-menu {
+    animation: slideDown 0.2s ease-out;
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+button:hover {
+    background-color: #f8f9fa;
+    color: #7EBFFF;
+}
+
+button.logout:hover {
+    background-color: #fef2f2;
+    color: #dc2626;
+}
