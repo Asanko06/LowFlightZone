@@ -44,10 +44,12 @@ public class FlightController {
         return ResponseEntity.ok(flight);
     }
 
-    // ✅ Новый эндпоинт для поиска рейсов (по номеру, городу, аэропорту)
     @GetMapping("/search")
-    public ResponseEntity<List<FlightDto>> searchFlights(@RequestParam("query") String query) {
-        List<FlightDto> results = flightService.searchFlights(query);
+    public ResponseEntity<List<FlightDto>> searchFlights(
+            @RequestParam("query") String query,
+            @RequestParam(name = "userEmail", required = false) String userEmail // 👈 добавляем
+    ) {
+        List<FlightDto> results = flightService.searchFlights(query, userEmail);
         return ResponseEntity.ok(results);
     }
 

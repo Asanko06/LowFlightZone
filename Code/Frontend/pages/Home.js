@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import api from '../services/api';
 import airplaneImage from "../assets/plane.png";
+import {useNavigate} from "react-router-dom";
 
 const Home = () => {
     const [searchQuery, setSearchQuery] = useState('');
@@ -9,18 +10,40 @@ const Home = () => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
     const { currentUser } = useAuth();
+    const navigate = useNavigate();
 
     useEffect(() => {
         loadRecentViews();
     }, []);
 
     // 📌 Загрузка истории просмотров
+// 📌 Загрузка истории просмотров
     const loadRecentViews = async () => {
         if (!currentUser) return;
         try {
             setLoading(true);
-            const response = await api.get('/api/flight-views/my/recent?limit=10');
-            setRecentFlights(Array.isArray(response.data) ? response.data : []);
+
+            // берем чуть больше просмотров, чтобы после фильтрации точно было 4
+            const response = await api.get('/api/flight-views/my/recent?limit=20');
+            let views = Array.isArray(response.data) ? response.data : [];
+
+            // ✅ Удаляем дубликаты по flight.id, оставляем самый последний просмотр
+            const uniqueMap = new Map();
+            for (const view of views) {
+                const flightId = view.flight?.id;
+                if (!flightId) continue;
+                const existing = uniqueMap.get(flightId);
+                if (!existing || new Date(view.viewedAt) > new Date(existing.viewedAt)) {
+                    uniqueMap.set(flightId, view);
+                }
+            }
+
+            // ✅ Сортируем по времени просмотра и берём только 4 последних
+            const uniqueSorted = Array.from(uniqueMap.values())
+                .sort((a, b) => new Date(b.viewedAt) - new Date(a.viewedAt))
+                .slice(0, 4);
+
+            setRecentFlights(uniqueSorted);
         } catch (error) {
             console.error('Error loading recent views:', error);
             setError('Не удалось загрузить историю просмотров');
@@ -30,7 +53,8 @@ const Home = () => {
         }
     };
 
-    // 📌 Поиск рейсов
+
+// 📌 Поиск рейсов
     const handleSearch = async (e) => {
         e.preventDefault();
         if (!searchQuery.trim()) {
@@ -40,16 +64,21 @@ const Home = () => {
 
         try {
             setLoading(true);
-            const response = await api.get(`/flights/search?query=${encodeURIComponent(searchQuery)}`);
+            const response = await api.get(`/flights/search?query=${encodeURIComponent(searchQuery)}&userEmail=${encodeURIComponent(currentUser.email)}`);
+
             const flights = Array.isArray(response.data) ? response.data : [];
 
-            // Приводим к тому же формату, что и история просмотров
+            // ✅ Сохраняем флаг подписки, если он приходит с сервера
             const wrapped = flights.map(f => ({
                 id: f.id,
-                flight: f,
+                flight: {
+                    ...f,
+                    subscribed: f.subscribed ?? false // если нет — ставим false по умолчанию
+                },
                 viewCount: 0,
                 viewedAt: null
             }));
+
             setRecentFlights(wrapped);
         } catch (error) {
             console.error('Search error:', error);
@@ -58,6 +87,7 @@ const Home = () => {
             setLoading(false);
         }
     };
+
 
     // 📌 Подписка/отписка
     const toggleSubscription = async (flightId, currentStatus, flightNumber) => {
@@ -190,21 +220,17 @@ const Home = () => {
                                 <div
                                     key={viewHistory.id}
                                     style={flightItemStyle}
-                                    onClick={() => recordFlightView(flight.id)}
+                                    onClick={() => {
+                                        navigate(`/flights/${flight.id}`);
+                                    }}
                                 >
                                     <div style={flightInfoStyle}>
                                         <div style={flightHeaderStyle}>
                                             <span style={flightNumberStyle}>{flight?.flightNumber || '—'}</span>
-                                            <span style={viewCountStyle}>
-                                                Просмотров: {viewHistory?.viewCount ?? 0}
-                                            </span>
                                         </div>
                                         <span style={flightRouteStyle}>
                                             {flight?.departureAirport?.city} ({flight?.departureAirport?.iataCode}) →{' '}
                                             {flight?.arrivalAirport?.city} ({flight?.arrivalAirport?.iataCode})
-                                        </span>
-                                        <span style={viewDateStyle}>
-                                            Последний просмотр: {formatDate(viewHistory?.viewedAt)}
                                         </span>
                                     </div>
                                     <button
@@ -320,7 +346,7 @@ const sectionTitleStyle = {
 };
 
 const refreshButtonStyle = {
-    background: 'none',
+    backgroundColor: 'transparent', // ✅ заменяем shorthand на backgroundColor
     border: 'none',
     cursor: 'pointer',
     padding: '0.5rem',

@@ -6,7 +6,8 @@ import lombok.Setter;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "flight_view_history")
+@Table(name = "flight_view_history",
+        uniqueConstraints = @UniqueConstraint(columnNames = {"user_id", "flight_id"}))
 @Getter
 @Setter
 public class FlightViewHistory {

@@ -7,9 +7,10 @@ import Flights from './pages/Flights';
 import Subscriptions from './pages/Subscriptions';
 import Profile from './pages/Profile';
 import LoginPage from './pages/LoginPage';
+import FlightDetails from './pages/FlightDetails'; // ✈️ импорт новой страницы
 import './styles/App.css';
 
-// Компонент Layout управляет Header
+// 📦 Компонент Layout управляет Header
 const Layout = ({ children }) => {
     const location = useLocation();
     const showHeader = location.pathname !== '/login';
@@ -21,7 +22,7 @@ const Layout = ({ children }) => {
     );
 };
 
-// Защита маршрутов
+// 🔐 Защита маршрутов
 const ProtectedRoute = ({ children }) => {
     const { isAuthenticated } = useAuth();
     return isAuthenticated ? children : <Navigate to="/login" replace />;
@@ -32,7 +33,7 @@ function App() {
         <AuthProvider>
             <Router>
                 <Routes>
-                    {/* 📌 Главная страница теперь защищена */}
+                    {/* 🏠 Главная страница */}
                     <Route
                         path="/"
                         element={
@@ -44,16 +45,40 @@ function App() {
                         }
                     />
 
-                    {/* 📌 Страница логина */}
+                    {/* 🔑 Страница логина */}
                     <Route path="/login" element={<LoginPage />} />
 
-                    {/* ✈️ Список рейсов */}
+                    {/* ✈️ Список всех рейсов */}
                     <Route
                         path="/flights"
                         element={
                             <ProtectedRoute>
                                 <Layout>
                                     <Flights />
+                                </Layout>
+                            </ProtectedRoute>
+                        }
+                    />
+
+                    {/* 📍 Детали рейса по ID */}
+                    <Route
+                        path="/flights/:flightId"
+                        element={
+                            <ProtectedRoute>
+                                <Layout>
+                                    <FlightDetails />
+                                </Layout>
+                            </ProtectedRoute>
+                        }
+                    />
+
+                    {/* 📍 Детали рейса по номеру (например, /flights/number/SU1334) */}
+                    <Route
+                        path="/flights/number/:flightNumber"
+                        element={
+                            <ProtectedRoute>
+                                <Layout>
+                                    <FlightDetails />
                                 </Layout>
                             </ProtectedRoute>
                         }

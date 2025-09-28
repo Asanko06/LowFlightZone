@@ -12,7 +12,10 @@ import com.example.lowflightzone.entity.FlightViewHistory;
 import com.example.lowflightzone.entity.User;
 import com.example.lowflightzone.exceptions.FlightException;
 import com.example.lowflightzone.exceptions.UserException;
+import com.example.lowflightzone.repositories.FlightRepository;
 import com.example.lowflightzone.repositories.FlightSubscriptionRepository;
+import com.example.lowflightzone.repositories.FlightViewHistoryRepository;
+import com.example.lowflightzone.repositories.UserRepository;
 import com.example.lowflightzone.security.SecurityUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -33,7 +36,10 @@ public class FlightViewHistoryService {
     private final UserDao userDao;
     private final FlightDao flightDao;
     private final SecurityUtils securityUtils;
-    private final FlightSubscriptionRepository subscriptionRepo;
+    private final FlightViewHistoryRepository flightViewHistoryRepository;
+    private final FlightRepository flightRepository;
+    private final UserRepository userRepository;
+    private final FlightSubscriptionRepository flightSubscriptionRepository;
 
     @Transactional
     public FlightViewHistoryDto recordFlightView(Integer flightId) {
@@ -48,6 +54,7 @@ public class FlightViewHistoryService {
         return recordFlightView(user, flight);
     }
 
+
     @Transactional
     public FlightViewHistoryDto recordFlightView(Integer userId, Integer flightId) {
         User user = userDao.findById(userId)
@@ -59,18 +66,36 @@ public class FlightViewHistoryService {
         return recordFlightView(user, flight);
     }
 
-    private FlightViewHistoryDto recordFlightView(User user, Flight flight) {
-        Optional<FlightViewHistory> existingView =
-                viewHistoryDao.findByUserIdAndFlightId(user.getId(), flight.getId());
+    @Transactional
+    public void recordFlightView(String email, Integer flightId) {
+        log.info("📊 Запись просмотра рейса {} для пользователя {}", flightId, email);
 
-        FlightViewHistory view = existingView.orElseGet(FlightViewHistory::new);
-        view.setUser(user);
-        view.setFlight(flight);
-        view.setViewedAt(LocalDateTime.now());
-        view.setViewCount(existingView.map(v -> v.getViewCount() + 1).orElse(1));
+        Flight flight = flightRepository.findById(flightId)
+                .orElseThrow(() -> new RuntimeException("Рейс не найден: " + flightId));
 
-        return convertToDto(viewHistoryDao.saveOrUpdateView(view));
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("Пользователь не найден: " + email));
+
+        // ✅ Проверяем, есть ли уже запись
+        Optional<FlightViewHistory> existing = flightViewHistoryRepository.findByUserAndFlight(user, flight);
+
+        FlightViewHistory viewHistory;
+        if (existing.isPresent()) {
+            viewHistory = existing.get();
+            viewHistory.setViewCount(viewHistory.getViewCount() + 1);
+            log.info("🔁 Обновлён просмотр: {} (просмотров: {})", flight.getFlightNumber(), viewHistory.getViewCount());
+        } else {
+            viewHistory = new FlightViewHistory();
+            viewHistory.setUser(user);
+            viewHistory.setFlight(flight);
+            viewHistory.setViewCount(1);
+            log.info("🆕 Новый просмотр: {}", flight.getFlightNumber());
+        }
+
+        viewHistory.setViewedAt(LocalDateTime.now());
+        flightViewHistoryRepository.save(viewHistory);
     }
+
 
     public List<FlightViewHistoryDto> getCurrentUserRecentViews(int limit) {
         Integer userId = securityUtils.getCurrentUserIdOrThrow();
@@ -98,6 +123,31 @@ public class FlightViewHistoryService {
         viewHistoryDao.getUserViewHistory(userId)
                 .forEach(h -> viewHistoryDao.deleteViewHistory(h.getId()));
     }
+
+    @Transactional
+    protected FlightViewHistoryDto recordFlightView(User user, Flight flight) {
+        // Проверяем, есть ли уже запись о просмотре этого рейса этим пользователем
+        Optional<FlightViewHistory> existing = flightViewHistoryRepository.findByUserAndFlight(user, flight);
+
+        FlightViewHistory viewHistory;
+        if (existing.isPresent()) {
+            viewHistory = existing.get();
+            viewHistory.setViewCount(viewHistory.getViewCount() + 1);
+            log.info("🔁 Обновлён просмотр рейса {} пользователем {}", flight.getFlightNumber(), user.getEmail());
+        } else {
+            viewHistory = new FlightViewHistory();
+            viewHistory.setUser(user);
+            viewHistory.setFlight(flight);
+            viewHistory.setViewCount(1);
+            log.info("🆕 Новый просмотр рейса {} пользователем {}", flight.getFlightNumber(), user.getEmail());
+        }
+
+        viewHistory.setViewedAt(LocalDateTime.now());
+        flightViewHistoryRepository.save(viewHistory);
+
+        return convertToDto(viewHistory);
+    }
+
 
     // 📌 Полное заполнение DTO + безопасная проверка подписки
     private FlightViewHistoryDto convertToDto(FlightViewHistory vh) {
@@ -144,7 +194,7 @@ public class FlightViewHistoryService {
             boolean isSubscribed = false;
             try {
                 String email = securityUtils.getCurrentUserOrThrow().getEmail();
-                isSubscribed = subscriptionRepo.existsByFlight_FlightNumberAndUser_EmailAndStatus(
+                isSubscribed = flightSubscriptionRepository.existsByFlight_FlightNumberAndUser_EmailAndStatus(
                         f.getFlightNumber(),
                         email,
                         FlightSubscription.SubscriptionStatus.ACTIVE

@@ -59,15 +59,33 @@ public class FlightService {
         return convertToDto(flight);
     }
 
-    public List<FlightDto> searchFlights(String query) {
+    public List<FlightDto> searchFlights(String query, String userEmail) {
         return flightRepository
                 .findByFlightNumberContainingIgnoreCaseOrDepartureAirport_CityContainingIgnoreCaseOrArrivalAirport_CityContainingIgnoreCaseOrDepartureAirport_IataCodeContainingIgnoreCaseOrArrivalAirport_IataCodeContainingIgnoreCaseOrDepartureAirport_NameContainingIgnoreCaseOrArrivalAirport_NameContainingIgnoreCase(
                         query, query, query, query, query, query, query
                 )
                 .stream()
-                .map(this::convertToDto)
+                .map(flight -> convertToDtoWithSubscription(flight, userEmail))
                 .collect(Collectors.toList());
     }
+
+    private FlightDto convertToDtoWithSubscription(Flight flight, String userEmail) {
+        FlightDto dto = convertToDto(flight);
+
+        if (userEmail != null && flight.getSubscriptions() != null) {
+            boolean isSubscribed = flight.getSubscriptions().stream()
+                    .anyMatch(sub -> sub.getUser() != null
+                            && sub.getUser().getEmail().equalsIgnoreCase(userEmail)
+                            && sub.getStatus() == FlightSubscription.SubscriptionStatus.ACTIVE);
+
+            dto.setSubscribed(isSubscribed);
+        } else {
+            dto.setSubscribed(false);
+        }
+
+        return dto;
+    }
+
 
     public FlightDto addFlight(FlightDto flightDto) {
         validateFlightDto(flightDto);
@@ -220,23 +238,75 @@ public class FlightService {
         return flightDto;
     }
 
-
-
     @Transactional
     public FlightDto getFlightById(Integer id) {
-        Flight flight = flightDao.findById(id)
-                .orElseThrow(() -> new FlightException(FLIGHT_NOT_FOUND_MESSAGE + id));
+        Flight flight = flightRepository.findByIdWithDetails(id)
+                .orElseThrow(() -> new FlightException("Рейс не найден: " + id));
 
-        // Записываем просмотр для текущего пользователя
+        // 🛠 Безопасная запись просмотра (не прерывает выполнение)
         try {
             viewHistoryService.recordFlightView(id);
         } catch (Exception e) {
-            // Логируем ошибку, но не прерываем выполнение
-            log.warn("Failed to record flight view for flight {}", id, e);
+            log.warn("⚠️ Не удалось записать просмотр рейса {}: {}", id, e.getMessage());
         }
 
-        return convertToDto(flight);
+        return convertToDtoSafe(flight);
     }
+
+    private FlightDto convertToDtoSafe(Flight flight) {
+        FlightDto dto = new FlightDto();
+        dto.setId(flight.getId());
+        dto.setFlightNumber(flight.getFlightNumber());
+        dto.setAirline(flight.getAirline());
+        dto.setStatus(flight.getStatus() != null ? flight.getStatus().toString() : "UNKNOWN");
+        dto.setDelayMinutes(flight.getDelayMinutes());
+        dto.setTerminal(flight.getTerminal());
+        dto.setGate(flight.getGate());
+        dto.setLastUpdated(flight.getLastUpdated());
+
+        // ✈️ Аэропорты
+        if (flight.getDepartureAirport() != null) {
+            AirportDto dep = new AirportDto();
+            dep.setIataCode(flight.getDepartureAirport().getIataCode());
+            dep.setName(flight.getDepartureAirport().getName());
+            dep.setCity(flight.getDepartureAirport().getCity());
+            dep.setCountry(flight.getDepartureAirport().getCountry());
+            dto.setDepartureAirport(dep);
+        }
+
+        if (flight.getArrivalAirport() != null) {
+            AirportDto arr = new AirportDto();
+            arr.setIataCode(flight.getArrivalAirport().getIataCode());
+            arr.setName(flight.getArrivalAirport().getName());
+            arr.setCity(flight.getArrivalAirport().getCity());
+            arr.setCountry(flight.getArrivalAirport().getCountry());
+            dto.setArrivalAirport(arr);
+        }
+
+        dto.setScheduledDeparture(flight.getScheduledDeparture());
+        dto.setScheduledArrival(flight.getScheduledArrival());
+        dto.setEstimatedDeparture(flight.getEstimatedDeparture());
+        dto.setEstimatedArrival(flight.getEstimatedArrival());
+        dto.setActualDeparture(flight.getActualDeparture());
+        dto.setActualArrival(flight.getActualArrival());
+
+        // 📊 Подписки
+        int activeSubs = 0;
+        try {
+            if (flight.getSubscriptions() != null) {
+                activeSubs = (int) flight.getSubscriptions().stream()
+                        .filter(sub -> sub.getStatus() == FlightSubscription.SubscriptionStatus.ACTIVE)
+                        .count();
+            }
+        } catch (Exception e) {
+            log.warn("⚠️ Ошибка при подсчёте подписок для рейса {}: {}", flight.getId(), e.getMessage());
+        }
+        dto.setSubscriptionCount(activeSubs);
+
+        return dto;
+    }
+
+
 
     @Autowired
     private FlightViewHistoryService viewHistoryService;

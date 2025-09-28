@@ -7,7 +7,6 @@ import com.example.lowflightzone.repositories.FlightRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.CommandLineRunner;
-import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDateTime;
@@ -25,7 +24,7 @@ public class DataInitializer implements CommandLineRunner {
     public void run(String... args) {
         log.info("🚀 Запуск инициализации тестовых данных...");
         initializeAirports();
-        generateTestFlights();
+        generateTestFlightsIfEmpty();
     }
 
     /**
@@ -59,9 +58,15 @@ public class DataInitializer implements CommandLineRunner {
     }
 
     /**
-     * ✅ Генерация случайных рейсов
+     * ✅ Генерация рейсов только если их в базе нет
      */
-    private void generateTestFlights() {
+    private void generateTestFlightsIfEmpty() {
+        long existingFlights = flightRepository.count();
+        if (existingFlights > 0) {
+            log.info("✈️ Рейсы уже существуют ({} шт.) — генерация пропущена.", existingFlights);
+            return;
+        }
+
         List<Airport> airports = airportRepository.findAll();
         if (airports.size() < 2) {
             log.warn("⚠️ Недостаточно аэропортов для генерации рейсов");

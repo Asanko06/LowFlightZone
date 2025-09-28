@@ -1,6 +1,8 @@
 package com.example.lowflightzone.repositories;
 
+import com.example.lowflightzone.entity.Flight;
 import com.example.lowflightzone.entity.FlightViewHistory;
+import com.example.lowflightzone.entity.User;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -21,6 +23,10 @@ public interface FlightViewHistoryRepository extends JpaRepository<FlightViewHis
     List<FlightViewHistory> findByUserIdOrderByViewedAtDesc(@Param("userId") Integer userId);
 
     Page<FlightViewHistory> findByUser_IdOrderByViewedAtDesc(Integer userId, Pageable pageable);
+
+    Optional<FlightViewHistory> findTopByFlight_IdAndUser_EmailOrderByViewedAtDesc(Integer flightId, String email);
+
+    Optional<FlightViewHistory> findByUserAndFlight(User user, Flight flight);
 
     Page<FlightViewHistory> findByUser_IdOrderByViewCountDescViewedAtDesc(Integer userId, Pageable pageable);
     // Проверить, существует ли запись

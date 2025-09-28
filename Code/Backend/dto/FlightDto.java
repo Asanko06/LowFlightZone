@@ -28,7 +28,9 @@ public class FlightDto {
     private String gate;
     private String status;
     private LocalDateTime lastUpdated;
+    private Integer viewCount;
+    private LocalDateTime viewedAt;
 
     private int subscriptionCount;
-    private boolean isSubscribed;
+    private boolean subscribed;
 }
