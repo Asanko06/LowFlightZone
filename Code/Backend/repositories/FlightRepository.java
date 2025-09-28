@@ -23,5 +23,4 @@ public interface FlightRepository extends JpaRepository<Flight, Integer> {
             String depName,
             String arrName
     );
-
 }

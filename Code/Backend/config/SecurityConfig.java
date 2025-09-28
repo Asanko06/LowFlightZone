@@ -29,9 +29,19 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf.disable())
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/auth/**", "/health", "/swagger-ui/**", "/api-docs/**").permitAll()
-                        .anyRequest().authenticated() // Все остальные endpoints требуют аутентификации
+                        // ✅ Разрешаем без авторизации
+                        .requestMatchers(
+                                "/auth/**",
+                                "/health",
+                                "/swagger-ui/**",
+                                "/api-docs/**",
+                                "/api/external/flight/**" // <-- вот это ключевое!
+                        ).permitAll()
+
+                        // ✅ Всё остальное защищено JWT
+                        .anyRequest().authenticated()
                 )
+                // ✅ Подключаем фильтр JWT
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
