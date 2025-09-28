@@ -61,8 +61,8 @@ public class FlightService {
 
     public List<FlightDto> searchFlights(String query) {
         return flightRepository
-                .findByFlightNumberContainingIgnoreCaseOrDepartureAirport_CityContainingIgnoreCaseOrArrivalAirport_CityContainingIgnoreCase(
-                        query, query, query
+                .findByFlightNumberContainingIgnoreCaseOrDepartureAirport_CityContainingIgnoreCaseOrArrivalAirport_CityContainingIgnoreCaseOrDepartureAirport_IataCodeContainingIgnoreCaseOrArrivalAirport_IataCodeContainingIgnoreCaseOrDepartureAirport_NameContainingIgnoreCaseOrArrivalAirport_NameContainingIgnoreCase(
+                        query, query, query, query, query, query, query
                 )
                 .stream()
                 .map(this::convertToDto)

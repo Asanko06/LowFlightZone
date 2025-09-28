@@ -14,8 +14,14 @@ public interface FlightRepository extends JpaRepository<Flight, Integer> {
 
     boolean existsByFlightNumber(String flightNumber);
 
-    List<Flight> findByFlightNumberContainingIgnoreCaseOrDepartureAirport_CityContainingIgnoreCaseOrArrivalAirport_CityContainingIgnoreCase(
-            String flightNumber, String departureCity, String arrivalCity
+    List<Flight> findByFlightNumberContainingIgnoreCaseOrDepartureAirport_CityContainingIgnoreCaseOrArrivalAirport_CityContainingIgnoreCaseOrDepartureAirport_IataCodeContainingIgnoreCaseOrArrivalAirport_IataCodeContainingIgnoreCaseOrDepartureAirport_NameContainingIgnoreCaseOrArrivalAirport_NameContainingIgnoreCase(
+            String flightNumber,
+            String depCity,
+            String arrCity,
+            String depIata,
+            String arrIata,
+            String depName,
+            String arrName
     );
 
 }
