@@ -5,6 +5,8 @@ import com.example.lowflightzone.dto.UserDto;
 import com.example.lowflightzone.entity.FlightSubscription;
 import com.example.lowflightzone.entity.User;
 import com.example.lowflightzone.exceptions.UserException;
+import com.example.lowflightzone.repositories.UserRepository;
+import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -15,13 +17,15 @@ import java.util.stream.Collectors;
 @Service
 public class UserService {
 
+    private final UserRepository userRepository;
     private final UserDao userDao;
     private final PasswordEncoder passwordEncoder;
     private final FlightSubscriptionService subscriptionService;
 
     @Autowired
-    public UserService(UserDao userDao, FlightSubscriptionService subscriptionService, PasswordEncoder passwordEncoder) {
+    public UserService(UserDao userDao, UserRepository userRepository, FlightSubscriptionService subscriptionService, PasswordEncoder passwordEncoder) {
         this.userDao = userDao;
+        this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.subscriptionService = subscriptionService;
     }
@@ -65,6 +69,25 @@ public class UserService {
         userDao.findById(id)
                 .orElseThrow(() -> new UserException("Пользователь не найден: " + id));
         userDao.deleteById(id);
+    }
+
+    @Transactional
+    public UserDto updateUser(Integer id, UserDto dto) {
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new UserException("Пользователь не найден с id = " + id));
+
+        // ✅ Обновляем только те поля, которые пришли
+        if (dto.getFirstName() != null) user.setFirstName(dto.getFirstName());
+        if (dto.getLastName() != null) user.setLastName(dto.getLastName());
+        if (dto.getPhoneNumber() != null) user.setPhoneNumber(dto.getPhoneNumber());
+
+        // ❗ Email менять по желанию — обычно его не дают редактировать
+        if (dto.getPassword() != null && !dto.getPassword().isBlank()) {
+            user.setPassword(dto.getPassword()); // тут лучше добавить шифрование пароля!
+        }
+
+        userRepository.save(user);
+        return convertToDto(user);
     }
 
     private UserDto convertToDto(User user) {

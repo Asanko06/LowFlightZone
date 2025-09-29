@@ -30,30 +30,41 @@ export const AuthProvider = ({ children }) => {
         try {
             const response = await authService.login(email, password);
 
-            // ✅ Сохраняем токен и email
             localStorage.setItem('authToken', response.token);
-            localStorage.setItem('userEmail', response.email);
 
-            // ✅ Настраиваем API с авторизацией
-            api.defaults.headers.common['Authorization'] = `Bearer ${response.token}`;
+            // ✅ Сохраняем весь объект пользователя, а не только email
+            setCurrentUser({
+                id: response.id,
+                email: response.email,
+                firstName: response.firstName,
+                lastName: response.lastName,
+                phoneNumber: response.phoneNumber,
+                password: response.password,
+                token: response.token
+            });
 
-            setCurrentUser({ token: response.token, email: response.email });
             return response;
         } catch (error) {
             throw error;
         }
     };
 
-    // 📌 Регистрация
     const register = async ({ email, password, firstName, lastName, phoneNumber }) => {
         try {
             const response = await authService.register({ email, password, firstName, lastName, phoneNumber });
 
             localStorage.setItem('authToken', response.token);
-            localStorage.setItem('userEmail', response.email);
-            api.defaults.headers.common['Authorization'] = `Bearer ${response.token}`;
 
-            setCurrentUser({ token: response.token, email: response.email });
+            setCurrentUser({
+                id: response.id,
+                email: response.email,
+                firstName: response.firstName,
+                lastName: response.lastName,
+                phoneNumber: response.phoneNumber,
+                password: response.password,
+                token: response.token
+            });
+
             return response;
         } catch (error) {
             throw error;

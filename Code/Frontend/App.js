@@ -6,6 +6,8 @@ import Home from './pages/Home';
 import Flights from './pages/Flights';
 import Subscriptions from './pages/Subscriptions';
 import Profile from './pages/Profile';
+import ProfilePage from "./pages/ProfilePage";
+import MyFlights from "./pages/MyFlights";
 import LoginPage from './pages/LoginPage';
 import FlightDetails from './pages/FlightDetails'; // ✈️ импорт новой страницы
 import './styles/App.css';
@@ -79,6 +81,28 @@ function App() {
                             <ProtectedRoute>
                                 <Layout>
                                     <FlightDetails />
+                                </Layout>
+                            </ProtectedRoute>
+                        }
+                    />
+
+                    <Route
+                        path="/my-flights"
+                        element={
+                            <ProtectedRoute>
+                                <Layout>
+                                    <MyFlights />
+                                </Layout>
+                            </ProtectedRoute>
+                        }
+                    />
+
+                    <Route
+                        path="/profile"
+                        element={
+                            <ProtectedRoute>
+                                <Layout>
+                                    <ProfilePage />  {/* ✅ Header появится автоматически */}
                                 </Layout>
                             </ProtectedRoute>
                         }

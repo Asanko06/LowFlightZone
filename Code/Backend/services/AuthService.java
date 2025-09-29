@@ -4,6 +4,7 @@ import com.example.lowflightzone.dao.UserDao;
 import com.example.lowflightzone.dto.AuthRequest;
 import com.example.lowflightzone.dto.AuthResponse;
 import com.example.lowflightzone.entity.User;
+import com.example.lowflightzone.repositories.UserRepository;
 import com.example.lowflightzone.security.CustomUserDetailsService;
 import com.example.lowflightzone.security.JwtUtil;
 import lombok.RequiredArgsConstructor;
@@ -25,6 +26,7 @@ public class AuthService {
     private final JwtUtil jwtUtil;
     private final AuthenticationManager authenticationManager;
     private final CustomUserDetailsService userDetailsService;
+    private final UserRepository userRepository;
 
     public AuthResponse register(AuthRequest request) {
         // Проверка на существующего пользователя
@@ -46,7 +48,16 @@ public class AuthService {
         final UserDetails userDetails = userDetailsService.loadUserByUsername(savedUser.getEmail());
         final String jwt = jwtUtil.generateToken(userDetails);
 
-        return new AuthResponse(jwt, savedUser.getEmail(), "Registration successful");
+        return new AuthResponse(
+                jwt,
+                user.getId(),
+                user.getEmail(),
+                user.getFirstName(),
+                user.getLastName(),
+                user.getPhoneNumber(),
+                "Login successful"
+        );
+
     }
 
     public AuthResponse login(AuthRequest request) {
@@ -61,6 +72,20 @@ public class AuthService {
         final UserDetails userDetails = userDetailsService.loadUserByUsername(request.getEmail());
         final String jwt = jwtUtil.generateToken(userDetails);
 
-        return new AuthResponse(jwt, request.getEmail(), "Login successful");
+        // ✅ Получаем пользователя из БД
+        User user = userRepository.findByEmail(request.getEmail())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
+
+        // ✅ Возвращаем все необходимые поля
+        return new AuthResponse(
+                jwt,
+                user.getId(),
+                user.getEmail(),
+                user.getFirstName(),
+                user.getLastName(),
+                user.getPhoneNumber(),
+                "Login successful"
+        );
     }
+
 }

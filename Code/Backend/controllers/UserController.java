@@ -10,7 +10,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("/users")
+@RequestMapping("/api/users")
 @Tag(name = "User Controller", description = "API для управления пользователями")
 public class UserController {
 
@@ -54,5 +54,13 @@ public class UserController {
     public ResponseEntity<String> deleteUser(@PathVariable Integer id) {
         userService.deleteUser(id);
         return ResponseEntity.ok("Пользователь успешно удален");
+    }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<UserDto> updateUser(
+            @PathVariable Integer id,
+            @RequestBody UserDto updatedUser
+    ) {
+        return ResponseEntity.ok(userService.updateUser(id, updatedUser));
     }
 }
