@@ -9,6 +9,7 @@ import Profile from './pages/Profile';
 import ProfilePage from "./pages/ProfilePage";
 import MyFlights from "./pages/MyFlights";
 import LoginPage from './pages/LoginPage';
+import FlightTimeCalc from "./pages/FlightTimeCalc";
 import FlightDetails from './pages/FlightDetails'; // ✈️ импорт новой страницы
 import './styles/App.css';
 
@@ -92,6 +93,17 @@ function App() {
                             <ProtectedRoute>
                                 <Layout>
                                     <MyFlights />
+                                </Layout>
+                            </ProtectedRoute>
+                        }
+                    />
+
+                    <Route
+                        path="/flights/:flightId/calculate"
+                        element={
+                            <ProtectedRoute>
+                                <Layout>
+                                    <FlightTimeCalc />
                                 </Layout>
                             </ProtectedRoute>
                         }
