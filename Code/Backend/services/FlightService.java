@@ -11,12 +11,14 @@ import com.example.lowflightzone.exceptions.AirportException;
 import com.example.lowflightzone.exceptions.FlightException;
 import com.example.lowflightzone.exceptions.ValidationException;
 import com.example.lowflightzone.repositories.FlightRepository;
+import com.example.lowflightzone.services.NotificationService;
 import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import lombok.extern.slf4j.Slf4j;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -29,12 +31,14 @@ public class FlightService {
     private final FlightDao flightDao;
     private final AirportDao airportDao;
     private final FlightRepository flightRepository;
+    private final NotificationService notificationService;
 
     @Autowired
-    public FlightService(FlightDao flightDao, AirportDao airportDao, FlightRepository flightRepository) {
+    public FlightService(FlightDao flightDao, AirportDao airportDao, FlightRepository flightRepository, NotificationService notificationService) {
         this.flightDao = flightDao;
         this.airportDao = airportDao;
         this.flightRepository = flightRepository;
+        this.notificationService = notificationService;
     }
 
     public List<FlightDto> getFlights(String departureAirport, String arrivalAirport, String status) {
@@ -107,25 +111,33 @@ public class FlightService {
         flightDao.deleteById(id);
     }
 
+    @Transactional
     public FlightDto updateFlight(Integer id, FlightDto updatedFlightDto) {
         validateFlightDto(updatedFlightDto);
 
         Flight flight = flightDao.findById(id)
                 .orElseThrow(() -> new FlightException(FLIGHT_NOT_FOUND_MESSAGE + id));
 
-        // Обновляем аэропорты через их коды
+        // 🔎 Сохраняем старые значения, чтобы потом сравнить
+        Flight.FlightStatus oldStatus = flight.getStatus();
+        LocalDateTime oldDeparture = flight.getScheduledDeparture();
+
+        // ✈️ Обновляем аэропорты через их коды
         if (updatedFlightDto.getDepartureAirport() != null) {
-            Airport departureAirport = airportDao.findByIataCode(updatedFlightDto.getDepartureAirport().getIataCode())
-                    .orElseThrow(() -> new AirportException("Аэропорт вылета не найден"));
+            Airport departureAirport = airportDao.findByIataCode(
+                    updatedFlightDto.getDepartureAirport().getIataCode()
+            ).orElseThrow(() -> new AirportException("Аэропорт вылета не найден"));
             flight.setDepartureAirport(departureAirport);
         }
 
         if (updatedFlightDto.getArrivalAirport() != null) {
-            Airport arrivalAirport = airportDao.findByIataCode(updatedFlightDto.getArrivalAirport().getIataCode())
-                    .orElseThrow(() -> new AirportException("Аэропорт прибытия не найден"));
+            Airport arrivalAirport = airportDao.findByIataCode(
+                    updatedFlightDto.getArrivalAirport().getIataCode()
+            ).orElseThrow(() -> new AirportException("Аэропорт прибытия не найден"));
             flight.setArrivalAirport(arrivalAirport);
         }
 
+        // ✏️ Обновляем остальные поля
         flight.setFlightNumber(updatedFlightDto.getFlightNumber());
         flight.setAirline(updatedFlightDto.getAirline());
         flight.setScheduledDeparture(updatedFlightDto.getScheduledDeparture());
@@ -133,6 +145,15 @@ public class FlightService {
         flight.setDelayMinutes(updatedFlightDto.getDelayMinutes());
 
         Flight updatedFlight = flightDao.save(flight);
+
+        // 📢 Проверяем: если статус или время изменились — отправляем уведомление
+        boolean statusChanged = !Objects.equals(oldStatus, updatedFlight.getStatus());
+        boolean departureChanged = !Objects.equals(oldDeparture, updatedFlight.getScheduledDeparture());
+
+        if (statusChanged || departureChanged) {
+            notificationService.notifySubscribersAboutFlightUpdate(updatedFlight);
+        }
+
         return convertToDto(updatedFlight);
     }
 

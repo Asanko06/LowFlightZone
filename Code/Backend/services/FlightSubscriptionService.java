@@ -11,6 +11,7 @@ import com.example.lowflightzone.entity.FlightSubscription;
 import com.example.lowflightzone.entity.User;
 import com.example.lowflightzone.exceptions.FlightException;
 import com.example.lowflightzone.exceptions.SubscriptionException;
+import com.example.lowflightzone.repositories.FlightSubscriptionRepository;
 import com.example.lowflightzone.security.SecurityUtils;
 import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -28,18 +29,20 @@ public class FlightSubscriptionService {
     private final NotificationService notificationService;
     private final UserDao userDao;
     private final SecurityUtils securityUtils;
+    private final FlightSubscriptionRepository flightSubscriptionRepository;
 
     @Autowired
     public FlightSubscriptionService(FlightSubscriptionDao subscriptionDao,
                                      FlightDao flightDao,
                                      NotificationService notificationService,
                                      UserDao userDao,
-                                     SecurityUtils securityUtils) {
+                                     SecurityUtils securityUtils, FlightSubscriptionRepository flightSubscriptionRepository) {
         this.subscriptionDao = subscriptionDao;
         this.flightDao = flightDao;
         this.notificationService = notificationService;
         this.userDao = userDao;
         this.securityUtils = securityUtils;
+        this.flightSubscriptionRepository = flightSubscriptionRepository;
     }
 
     /**
@@ -47,8 +50,14 @@ public class FlightSubscriptionService {
      * ✅ Поведение: если была подписка со статусом CANCELLED — меняем её на ACTIVE (реактивация),
      *               если активной нет и прошлых не было — создаём новую.
      */
-    public FlightSubscriptionDto subscribeFlexible(Integer flightId, String flightNumber, String deviceToken) {
-        // 1) Определяем flightNumber
+    public FlightSubscriptionDto subscribeFlexible(
+            Integer flightId,
+            String flightNumber,
+            String endpoint,
+            String p256dh,
+            String auth
+    ) {
+        // 1️⃣ Определяем flightNumber
         String resolvedFlightNumber = flightNumber;
         if (resolvedFlightNumber == null && flightId != null) {
             Flight flight = flightDao.findById(flightId)
@@ -60,54 +69,77 @@ public class FlightSubscriptionService {
         }
         final String finalFlightNumber = resolvedFlightNumber;
 
-        // 2) Текущий пользователь
+        // 2️⃣ Текущий пользователь
         User current = securityUtils.getCurrentUserOrThrow();
         String userEmail = current.getEmail();
 
-        // 3) Если уже есть ACTIVE — запрещаем повтор
+        // 3️⃣ Проверка на уже существующую активную подписку
         if (subscriptionDao.existsActiveByFlightAndUser(finalFlightNumber, userEmail)) {
             throw new SubscriptionException("Активная подписка уже существует для пользователя: " + userEmail);
         }
 
-        // 4) Получаем сущности рейса и пользователя
+        // 4️⃣ Получаем сущности рейса и пользователя
         Flight flight = flightDao.findByFlightNumber(finalFlightNumber)
                 .orElseThrow(() -> new FlightException("Рейс не найден: " + finalFlightNumber));
 
         User user = userDao.findByEmail(userEmail)
                 .orElseThrow(() -> new SubscriptionException("Пользователь не найден: " + userEmail));
 
-        // 5) ✅ Реактивация: ищем последнюю подписку (любой статус)
+        // 5️⃣ Реактивация или новая подписка
         Optional<FlightSubscription> latestOpt =
                 subscriptionDao.findLatestByFlightNumberAndUserEmail(finalFlightNumber, userEmail);
 
         FlightSubscription saved;
+
         if (latestOpt.isPresent()) {
-            // Было ранее — реактивируем
+            // ✅ Реактивация старой подписки
             FlightSubscription existing = latestOpt.get();
             existing.setStatus(FlightSubscription.SubscriptionStatus.ACTIVE);
             existing.setNotificationTypes("DELAY,CANCELLATION,STATUS_CHANGE");
-            if (deviceToken != null && !deviceToken.isBlank()) {
-                existing.setDeviceToken(deviceToken);
-            }
-            // Можно обновить "updatedAt", если поле есть
+
+            // 💾 Сохраняем Web Push ключи
+            if (endpoint != null && !endpoint.isBlank()) existing.setEndpoint(endpoint);
+            if (p256dh != null && !p256dh.isBlank()) existing.setP256dh(p256dh);
+            if (auth != null && !auth.isBlank()) existing.setAuth(auth);
+
             saved = subscriptionDao.save(existing);
+
         } else {
-            // Не было — создаём новую
+            // ✨ Создание новой подписки
             FlightSubscription sub = new FlightSubscription();
             sub.setFlight(flight);
             sub.setUser(user);
             sub.setStatus(FlightSubscription.SubscriptionStatus.ACTIVE);
             sub.setNotificationTypes("DELAY,CANCELLATION,STATUS_CHANGE");
-            if (deviceToken != null && !deviceToken.isBlank()) {
-                sub.setDeviceToken(deviceToken);
-            }
+
+            // 💾 Сохраняем Web Push ключи
+            if (endpoint != null && !endpoint.isBlank()) sub.setEndpoint(endpoint);
+            if (p256dh != null && !p256dh.isBlank()) sub.setP256dh(p256dh);
+            if (auth != null && !auth.isBlank()) sub.setAuth(auth);
+
             saved = subscriptionDao.save(sub);
         }
 
+        // 📬 Отправляем подтверждение подписки
         notificationService.sendSubscriptionConfirmation(saved);
+
         return convertToDto(saved);
     }
 
+    @Transactional
+    public void updateWebPushSubscription(Integer userId, String endpoint, String p256dh, String auth) {
+        // Ищем активную подписку пользователя
+        FlightSubscription subscription = flightSubscriptionRepository
+                .findFirstByUserIdAndStatus(userId, FlightSubscription.SubscriptionStatus.ACTIVE)
+                .orElseThrow(() -> new SubscriptionException("Активная подписка не найдена для пользователя id=" + userId));
+
+        // Обновляем пуш-данные
+        if (endpoint != null && !endpoint.isBlank()) subscription.setEndpoint(endpoint);
+        if (p256dh != null && !p256dh.isBlank()) subscription.setP256dh(p256dh);
+        if (auth != null && !auth.isBlank()) subscription.setAuth(auth);
+
+        subscriptionDao.save(subscription);
+    }
 
     /** Универсальная отписка: subscriptionId или (flightId / flightNumber) для текущего пользователя */
     @Transactional

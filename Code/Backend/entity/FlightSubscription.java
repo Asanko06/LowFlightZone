@@ -56,6 +56,15 @@ public class FlightSubscription {
         ACTIVE, PAUSED, CANCELLED
     }
 
+    @Column(nullable = false, length = 500)
+    private String endpoint;
+
+    @Column(nullable = false, length = 255)
+    private String p256dh;
+
+    @Column(nullable = false, length = 255)
+    private String auth;
+
     @PrePersist
     protected void onCreate() {
         createdAt = LocalDateTime.now();

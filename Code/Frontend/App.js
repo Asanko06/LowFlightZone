@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import Header from './components/common/Header';
@@ -10,10 +10,13 @@ import ProfilePage from "./pages/ProfilePage";
 import MyFlights from "./pages/MyFlights";
 import LoginPage from './pages/LoginPage';
 import FlightTimeCalc from "./pages/FlightTimeCalc";
-import FlightDetails from './pages/FlightDetails'; // ✈️ импорт новой страницы
+import FlightDetails from './pages/FlightDetails';
 import './styles/App.css';
+import { subscribeUserToPush } from "./utils/pushManager"; // ✅ импортируем утилиту для пушей
 
-// 📦 Компонент Layout управляет Header
+/* =========================
+   Layout с автоматическим Header
+   ========================= */
 const Layout = ({ children }) => {
     const location = useLocation();
     const showHeader = location.pathname !== '/login';
@@ -25,13 +28,38 @@ const Layout = ({ children }) => {
     );
 };
 
-// 🔐 Защита маршрутов
+/* =========================
+   Защита маршрутов
+   ========================= */
 const ProtectedRoute = ({ children }) => {
     const { isAuthenticated } = useAuth();
+
+    // 📡 При входе в систему — подписываем пользователя на push
+    useEffect(() => {
+        if (isAuthenticated) {
+            subscribeUserToPush().catch(console.error);
+        }
+    }, [isAuthenticated]);
+
     return isAuthenticated ? children : <Navigate to="/login" replace />;
 };
 
+/* =========================
+   Основное приложение
+   ========================= */
 function App() {
+    // 🛠️ Регистрируем Service Worker при старте приложения
+    useEffect(() => {
+        if ("serviceWorker" in navigator) {
+            window.addEventListener("load", () => {
+                navigator.serviceWorker
+                    .register("/service-worker.js")
+                    .then((reg) => console.log("✅ Service Worker зарегистрирован:", reg.scope))
+                    .catch((err) => console.error("❌ Ошибка регистрации Service Worker:", err));
+            });
+        }
+    }, []);
+
     return (
         <AuthProvider>
             <Router>
@@ -75,7 +103,7 @@ function App() {
                         }
                     />
 
-                    {/* 📍 Детали рейса по номеру (например, /flights/number/SU1334) */}
+                    {/* 📍 Детали рейса по номеру */}
                     <Route
                         path="/flights/number/:flightNumber"
                         element={
@@ -87,6 +115,7 @@ function App() {
                         }
                     />
 
+                    {/* ✈️ Мои рейсы */}
                     <Route
                         path="/my-flights"
                         element={
@@ -98,6 +127,7 @@ function App() {
                         }
                     />
 
+                    {/* 🕒 Страница расчёта времени */}
                     <Route
                         path="/flights/:flightId/calculate"
                         element={
@@ -109,12 +139,13 @@ function App() {
                         }
                     />
 
+                    {/* 👤 Профиль */}
                     <Route
                         path="/profile"
                         element={
                             <ProtectedRoute>
                                 <Layout>
-                                    <ProfilePage />  {/* ✅ Header появится автоматически */}
+                                    <ProfilePage />
                                 </Layout>
                             </ProtectedRoute>
                         }
@@ -132,19 +163,7 @@ function App() {
                         }
                     />
 
-                    {/* 👤 Профиль */}
-                    <Route
-                        path="/profile"
-                        element={
-                            <ProtectedRoute>
-                                <Layout>
-                                    <Profile />
-                                </Layout>
-                            </ProtectedRoute>
-                        }
-                    />
-
-                    {/* 🌐 Неизвестные маршруты → логин */}
+                    {/* 🌐 Фолбэк */}
                     <Route path="*" element={<Navigate to="/login" replace />} />
                 </Routes>
             </Router>

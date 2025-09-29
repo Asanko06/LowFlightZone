@@ -1,6 +1,7 @@
 package com.example.lowflightzone.controllers;
 
 import com.example.lowflightzone.dto.FlightSubscriptionDto;
+import com.example.lowflightzone.dto.SubscriptionRequest;
 import com.example.lowflightzone.services.FlightSubscriptionService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -18,19 +19,22 @@ public class FlightSubscriptionController {
 
     private final FlightSubscriptionService subscriptionService;
 
-    @Operation(summary = "Подписаться на рейс (можно передавать flightId или flightNumber)")
+    @Operation(summary = "Подписаться на рейс и сохранить Web Push параметры")
     @PostMapping("/subscribe")
-    public ResponseEntity<FlightSubscriptionDto> subscribeToFlight(
-            @RequestParam(required = false) Integer flightId,
-            @RequestParam(required = false) String flightNumber,
-            @RequestParam(required = false) String deviceToken
-    ) {
-        if ((flightId == null) && (flightNumber == null || flightNumber.isBlank())) {
-            return ResponseEntity.badRequest().build();
-        }
-        FlightSubscriptionDto dto = subscriptionService.subscribeFlexible(flightId, flightNumber, deviceToken);
+    public ResponseEntity<FlightSubscriptionDto> subscribeToFlight(@RequestBody SubscriptionRequest request) {
+
+        FlightSubscriptionDto dto = subscriptionService.subscribeFlexible(
+                request.getFlightId(),
+                request.getFlightNumber(),
+                request.getEndpoint(),
+                request.getP256dh(),
+                request.getAuth()
+        );
+
         return ResponseEntity.ok(dto);
     }
+
+
 
     @Operation(summary = "Отписаться от рейса (можно передавать subscriptionId или flightId/flightNumber)")
     @PostMapping("/unsubscribe")

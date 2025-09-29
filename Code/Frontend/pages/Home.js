@@ -3,6 +3,7 @@ import { useAuth } from '../context/AuthContext';
 import api from '../services/api';
 import airplaneImage from "../assets/plane.png";
 import {useNavigate} from "react-router-dom";
+import { subscribeUserToPush } from "../utils/pushManager";
 
 const Home = () => {
     const [searchQuery, setSearchQuery] = useState('');
@@ -89,15 +90,30 @@ const Home = () => {
     };
 
 
-    // 📌 Подписка/отписка
+    // 📌 ✅ Подписка/отписка с передачей push-параметров
     const toggleSubscription = async (flightId, currentStatus, flightNumber) => {
         try {
             if (currentStatus) {
+                // 📤 Отписка
                 await api.post(`/api/subscriptions/unsubscribe?flightNumber=${flightNumber}`);
             } else {
-                await api.post(`/api/subscriptions/subscribe?flightId=${flightId}`);
+                // ✅ Получаем Web Push-подписку браузера
+                const subscription = await subscribeUserToPush();
+                if (!subscription) {
+                    alert("❌ Не удалось получить подписку на уведомления. Разрешите уведомления в браузере.");
+                    return;
+                }
+
+                // 📩 Отправляем подписку вместе с данными рейса
+                await api.post(`/api/subscriptions/subscribe`, {
+                    flightId: flightId,
+                    endpoint: subscription.endpoint,
+                    p256dh: subscription.keys.p256dh,
+                    auth: subscription.keys.auth,
+                });
             }
 
+            // 🌀 Обновляем состояние кнопки ❤️
             setRecentFlights(prevFlights =>
                 prevFlights.map(view =>
                     view?.flight?.id === flightId

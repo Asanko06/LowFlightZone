@@ -4,7 +4,9 @@ import com.example.lowflightzone.dao.UserDao;
 import com.example.lowflightzone.dto.UserDto;
 import com.example.lowflightzone.entity.FlightSubscription;
 import com.example.lowflightzone.entity.User;
+import com.example.lowflightzone.exceptions.SubscriptionException;
 import com.example.lowflightzone.exceptions.UserException;
+import com.example.lowflightzone.repositories.FlightSubscriptionRepository;
 import com.example.lowflightzone.repositories.UserRepository;
 import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,11 +22,13 @@ public class UserService {
     private final UserRepository userRepository;
     private final UserDao userDao;
     private final PasswordEncoder passwordEncoder;
+    private final FlightSubscriptionRepository subscriptionRepository;
     private final FlightSubscriptionService subscriptionService;
 
     @Autowired
-    public UserService(UserDao userDao, UserRepository userRepository, FlightSubscriptionService subscriptionService, PasswordEncoder passwordEncoder) {
+    public UserService(UserDao userDao, UserRepository userRepository, FlightSubscriptionRepository subscriptionRepository, FlightSubscriptionService subscriptionService, PasswordEncoder passwordEncoder) {
         this.userDao = userDao;
+        this.subscriptionRepository = subscriptionRepository;
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.subscriptionService = subscriptionService;
@@ -41,6 +45,42 @@ public class UserService {
                 .orElseThrow(() -> new UserException("Пользователь не найден: " + id));
         return convertToDto(user);
     }
+
+    // 🔥 Новый метод для сохранения deviceToken
+    public void updateDeviceToken(Integer userId, String token) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new UserException("Пользователь не найден с id=" + userId));
+        user.setDeviceToken(token);
+        userRepository.save(user);
+    }
+
+    @Transactional
+    public void updateWebPushSubscription(Integer userId, String endpoint, String p256dh, String auth) {
+        // 1️⃣ Проверяем, существует ли пользователь
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new UserException("Пользователь не найден: " + userId));
+
+        // 2️⃣ Ищем его активную подписку
+        FlightSubscription subscription = subscriptionRepository
+                .findFirstByUserIdAndStatus(userId, FlightSubscription.SubscriptionStatus.ACTIVE)
+                .orElseThrow(() -> new SubscriptionException("Активная подписка не найдена для пользователя id=" + userId));
+
+        // 3️⃣ Обновляем параметры Web Push (если они переданы)
+        if (endpoint != null && !endpoint.isBlank()) {
+            subscription.setEndpoint(endpoint);
+        }
+        if (p256dh != null && !p256dh.isBlank()) {
+            subscription.setP256dh(p256dh);
+        }
+        if (auth != null && !auth.isBlank()) {
+            subscription.setAuth(auth);
+        }
+
+        // 4️⃣ Сохраняем изменения
+        subscriptionRepository.save(subscription);
+    }
+
+
 
     public UserDto getUserByEmail(String email) {
         User user = userDao.findByEmail(email)

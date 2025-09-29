@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import airplaneImage from '../assets/plane.png';
+import { subscribeUserToPush } from "../utils/pushManager";
+import api from "../services/api";
 
 const LoginPage = () => {
     const [isLogin, setIsLogin] = useState(true);
@@ -17,6 +19,7 @@ const LoginPage = () => {
     const navigate = useNavigate();
 
     const handleLogin = async (e) => {
+        let subscription = null;
         if (e) e.preventDefault();
         if (!email || !password) {
             setError('Please enter email and password');
@@ -27,7 +30,10 @@ const LoginPage = () => {
         setError('');
 
         try {
+            // 1️⃣ Сначала логинимся
             await login(email, password);
+
+            // 3️⃣ И только после всего — переходим на главную
             navigate('/');
         } catch (error) {
             setError('Login failed. Please check your credentials.');
@@ -35,6 +41,7 @@ const LoginPage = () => {
             setLoading(false);
         }
     };
+
 
     const handleSignUp = async (e) => {
         if (e) e.preventDefault();

@@ -48,8 +48,12 @@ public interface FlightSubscriptionRepository extends JpaRepository<FlightSubscr
             FlightSubscription.SubscriptionStatus status
     );
 
+    Optional<FlightSubscription> findFirstByUserIdAndStatus(Integer userId, FlightSubscription.SubscriptionStatus status);
+
     // Проверка существования подписки у пользователя на рейс
     boolean existsByFlight_FlightNumberAndUser_Email(String flightNumber, String userEmail);
+
+
 
     // Активные подписки пользователя
     @Query("SELECT fs FROM FlightSubscription fs WHERE fs.user.id = :userId AND fs.status = 'ACTIVE'")
@@ -61,4 +65,10 @@ public interface FlightSubscriptionRepository extends JpaRepository<FlightSubscr
             String flightNumber,
             FlightSubscription.SubscriptionStatus status
     );
+
+    List<FlightSubscription> findAllByFlight_Id(Integer flightId);
+
+    List<FlightSubscription> findAllByFlightIdAndStatus(Integer flightId, FlightSubscription.SubscriptionStatus status);
+
+
 }
