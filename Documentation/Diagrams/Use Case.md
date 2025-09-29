@@ -1,5 +1,7 @@
 ## Диаграмма вариантов использования
 
+![Use Case](https://github.com/user-attachments/assets/1cfb0bfa-6a93-49e4-b8ce-2eb399c86e31)
+
 ## Глоссарий
 
 |Термин	                |Определение|
