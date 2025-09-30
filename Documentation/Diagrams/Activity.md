@@ -8,12 +8,14 @@
 
 ## 1. Вход в учётную запись
 
-<img width="667" height="653" alt="ActivityDiagramLogIn" src="https://github.com/user-attachments/assets/21d793ae-63b4-493a-87dd-c07cc194476e" />
+
+<img width="667" height="653" alt="ActivityDiagramLogIn" src="https://github.com/user-attachments/assets/8f3b9c5b-9529-4875-b37b-47cbf726234c" />
 
 ## 2. Подписаться или отписаться от рейса
 
-<img width="978" height="719" alt="ActivityDiagramSubscribe" src="https://github.com/user-attachments/assets/7039db9c-d2c9-4f72-89e2-d5ddf64d780a" />
+
+<img width="978" height="719" alt="ActivityDiagramSubscribe" src="https://github.com/user-attachments/assets/c0a006d8-49f7-4f18-9de2-4b36742f210b" />
 
 ## 3. Поиск рейса
 
-![ActivityDiagramFlightSearch](https://github.com/user-attachments/assets/331351a1-b208-4f5c-bff0-073330594e73)
+<img width="678" height="573" alt="ActivityDiagramFlightSearch" src="https://github.com/user-attachments/assets/c8a13fee-4c8a-4bc5-abcc-c8305c9a4034" />
