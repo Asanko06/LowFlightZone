@@ -1,3 +1,4 @@
+// src/context/AuthContext.js
 import React, { createContext, useState, useContext, useEffect } from 'react';
 import { authService } from '../services/auth';
 import api from '../services/api';
@@ -15,8 +16,24 @@ export const AuthProvider = ({ children }) => {
         const email = localStorage.getItem('userEmail');
 
         if (token && email) {
-            setCurrentUser({ token, email });
-            api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+            try {
+                // ✅ Проверяем, не истёк ли JWT токен
+                const [, payloadBase64] = token.split('.');
+                const payload = JSON.parse(atob(payloadBase64));
+
+                if (payload.exp * 1000 > Date.now()) {
+                    setCurrentUser({ email, token });
+                    api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+                } else {
+                    console.warn("🔒 JWT истёк — очищаем localStorage");
+                    localStorage.removeItem('authToken');
+                    localStorage.removeItem('userEmail');
+                }
+            } catch (e) {
+                console.error("❌ Ошибка при разборе токена:", e);
+                localStorage.removeItem('authToken');
+                localStorage.removeItem('userEmail');
+            }
         }
 
         setLoading(false);
@@ -24,14 +41,16 @@ export const AuthProvider = ({ children }) => {
 
     // 📌 Логин
     const login = async (email, password) => {
-        // ⚠️ Удаляем старый токен перед логином
+        // 🧹 Удаляем старые данные перед новым логином
         localStorage.removeItem('authToken');
+        localStorage.removeItem('userEmail');
         delete api.defaults.headers.common['Authorization'];
 
         try {
             const response = await authService.login(email, password);
 
             localStorage.setItem('authToken', response.token);
+            localStorage.setItem('userEmail', response.email); // ✅ добавили
             api.defaults.headers.common['Authorization'] = `Bearer ${response.token}`;
 
             setCurrentUser({
@@ -50,9 +69,11 @@ export const AuthProvider = ({ children }) => {
         }
     };
 
+    // 📌 Регистрация
     const register = async ({ email, password, firstName, lastName, phoneNumber }) => {
         // 🧹 очищаем старый токен, если был
         localStorage.removeItem('authToken');
+        localStorage.removeItem('userEmail');
         delete api.defaults.headers.common['Authorization'];
 
         try {
@@ -60,6 +81,7 @@ export const AuthProvider = ({ children }) => {
 
             // ✅ сохраняем токен и пользователя
             localStorage.setItem('authToken', response.token);
+            localStorage.setItem('userEmail', response.email); // ✅ добавили
             api.defaults.headers.common['Authorization'] = `Bearer ${response.token}`;
 
             setCurrentUser({
@@ -96,11 +118,10 @@ export const AuthProvider = ({ children }) => {
                 throw new Error("Сервер недоступен. Проверьте подключение к интернету.");
             }
 
-            // 📌 5. Фолбэк — если ничего из вышеперечисленного не подошло
+            // 📌 5. Фолбэк — если ничего не подошло
             throw new Error("Ошибка регистрации. Попробуйте снова позже.");
         }
     };
-
 
     // 📌 Логаут
     const logout = () => {
