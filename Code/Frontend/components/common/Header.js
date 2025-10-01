@@ -12,7 +12,11 @@ const Header = () => {
     const profileMenuRef = useRef(null);
     const burgerMenuRef = useRef(null);
 
-    // Закрытие выпадающих меню при клике вне
+    // 📍 состояние для города и ошибок геолокации
+    const [city, setCity] = useState("Определение...");
+    const [geoError, setGeoError] = useState("");
+
+    // Закрытие меню при клике вне
     useEffect(() => {
         const handleClickOutside = (event) => {
             if (profileMenuRef.current && !profileMenuRef.current.contains(event.target)) {
@@ -24,6 +28,42 @@ const Header = () => {
         };
         document.addEventListener('mousedown', handleClickOutside);
         return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, []);
+
+    // 📍 Геолокация и определение города
+    useEffect(() => {
+        if (!("geolocation" in navigator)) {
+            setGeoError("Геолокация недоступна");
+            setCity("Москва");
+            return;
+        }
+
+        navigator.geolocation.getCurrentPosition(
+            async (pos) => {
+                const { latitude, longitude } = pos.coords;
+                try {
+                    const res = await fetch(
+                        `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&zoom=10&addressdetails=1`
+                    );
+                    const data = await res.json();
+                    const cityName =
+                        data.address.city ||
+                        data.address.town ||
+                        data.address.village ||
+                        data.address.state ||
+                        "Неизвестно";
+                    setCity(cityName);
+                } catch (e) {
+                    console.error("Ошибка при определении города:", e);
+                    setCity("Неизвестно");
+                }
+            },
+            () => {
+                setGeoError("Не удалось определить местоположение");
+                setCity("Москва");
+            },
+            { enableHighAccuracy: true, timeout: 8000, maximumAge: 20000 }
+        );
     }, []);
 
     const handleLogout = () => {
@@ -77,7 +117,7 @@ const Header = () => {
                 <svg width="26" height="26" viewBox="0 0 24 24" fill="#7EBFFF">
                     <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
                 </svg>
-                <span style={cityTextStyle}>Moscow</span>
+                <span style={cityTextStyle}>{city}</span>
             </div>
 
             {/* 👤 Профиль */}
@@ -123,7 +163,7 @@ const Header = () => {
 const headerStyle = {
     backgroundColor: 'white',
     borderBottom: '1px solid #e0e0e0',
-    padding: '0.6rem 1rem', // 🔹 уменьшено
+    padding: '0.6rem 1rem',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'space-between',
@@ -137,10 +177,10 @@ const menuButtonStyle = {
     background: 'none',
     border: 'none',
     cursor: 'pointer',
-    padding: '0.6rem 0.5rem', // 🔼 увеличили верх/низ
-    height: '48px',           // 🔼 кнопка чуть выше
+    padding: '0.6rem 0.5rem',
+    height: '48px',
     display: 'flex',
-    alignItems: 'center',     // выравниваем по вертикали
+    alignItems: 'center',
     justifyContent: 'center'
 };
 
@@ -193,7 +233,7 @@ const locationStyle = {
 
 const cityTextStyle = {
     color: 'black',
-    fontSize: '1.4rem', // 🔹 уменьшено
+    fontSize: '1.4rem',
     fontWeight: '600',
     marginBottom: '0.2rem'
 };
@@ -213,7 +253,7 @@ const profileButtonStyle = {
 };
 
 const profileCircleStyle = {
-    width: '36px', // 🔹 уменьшено
+    width: '36px',
     height: '36px',
     borderRadius: '50%',
     border: '2px solid #7EBFFF',
