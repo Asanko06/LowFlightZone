@@ -68,7 +68,7 @@ public class Flight {
     private List<FlightSubscription> subscriptions = new ArrayList<>();
 
     public enum FlightStatus {
-        SCHEDULED, ACTIVE, DELAYED, CANCELLED, DIVERTED, LANDED, ARRIVED
+        SCHEDULED, DELAYED, CANCELLED,  ARRIVED, DEPARTED
     }
 
     @PrePersist

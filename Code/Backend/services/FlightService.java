@@ -12,8 +12,10 @@ import com.example.lowflightzone.exceptions.FlightException;
 import com.example.lowflightzone.exceptions.ValidationException;
 import com.example.lowflightzone.repositories.FlightRepository;
 import com.example.lowflightzone.services.NotificationService;
+import jakarta.annotation.PostConstruct;
 import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import lombok.extern.slf4j.Slf4j;
 import java.time.LocalDateTime;
@@ -90,6 +92,103 @@ public class FlightService {
         return dto;
     }
 
+    @Transactional
+    public void recalculateDelayedFlights() {
+        final LocalDateTime now = LocalDateTime.now();
+        List<Flight> flights = flightRepository.findAll();
+
+        for (Flight f : flights) {
+            boolean updated = false;
+
+            final boolean isDelayed   = f.getStatus() == Flight.FlightStatus.DELAYED;
+            final boolean isCancelled = f.getStatus() == Flight.FlightStatus.CANCELLED;
+            final boolean isDeparted  = f.getStatus() == Flight.FlightStatus.DEPARTED;
+            final boolean isArrived   = f.getStatus() == Flight.FlightStatus.ARRIVED;
+
+            Integer delay = f.getDelayMinutes() == null ? 0 : f.getDelayMinutes();
+
+            /* 1) Если рейс ЗАДЕРЖАН — считаем estimated = scheduled + delay */
+            if (isDelayed && delay > 0) {
+                if (f.getScheduledDeparture() != null) {
+                    LocalDateTime newEstDep = f.getScheduledDeparture().plusMinutes(delay);
+                    if (!newEstDep.equals(f.getEstimatedDeparture())) {
+                        f.setEstimatedDeparture(newEstDep);
+                        updated = true;
+                    }
+                }
+                if (f.getScheduledArrival() != null) {
+                    LocalDateTime newEstArr = f.getScheduledArrival().plusMinutes(delay);
+                    if (!newEstArr.equals(f.getEstimatedArrival())) {
+                        f.setEstimatedArrival(newEstArr);
+                        updated = true;
+                    }
+                }
+            }
+
+        /* 2) Для всех, кроме DELAYED/CANCELLED:
+              если estimated не задан — подставляем scheduled (бесплатный «прогноз») */
+            if (!isDelayed && !isCancelled) {
+                if (f.getEstimatedDeparture() == null && f.getScheduledDeparture() != null) {
+                    f.setEstimatedDeparture(f.getScheduledDeparture());
+                    updated = true;
+                }
+                if (f.getEstimatedArrival() == null && f.getScheduledArrival() != null) {
+                    f.setEstimatedArrival(f.getScheduledArrival());
+                    updated = true;
+                }
+            }
+
+            /* 3) Если сейчас уже ПОСЛЕ estimated — заполняем actual этим estimated */
+            if (f.getEstimatedDeparture() != null
+                    && (f.getActualDeparture() == null)
+                    && now.isAfter(f.getEstimatedDeparture())) {
+                f.setActualDeparture(f.getEstimatedDeparture());
+                updated = true;
+            }
+
+            if (f.getEstimatedArrival() != null
+                    && (f.getActualArrival() == null)
+                    && now.isAfter(f.getEstimatedArrival())) {
+                f.setActualArrival(f.getEstimatedArrival());
+                updated = true;
+            }
+
+        /* 4) Доп. правила статусов:
+              - Если статус DEPARTED и уже есть estimatedDeparture — гарантируем actualDeparture
+              - Если статус ARRIVED и есть оба estimated — проставим оба actual */
+            if (isDeparted && f.getEstimatedDeparture() != null && f.getActualDeparture() == null) {
+                f.setActualDeparture(f.getEstimatedDeparture());
+                updated = true;
+            }
+            if (isArrived && f.getEstimatedDeparture() != null && f.getEstimatedArrival() != null) {
+                if (f.getActualDeparture() == null) { f.setActualDeparture(f.getEstimatedDeparture()); updated = true; }
+                if (f.getActualArrival()   == null) { f.setActualArrival(f.getEstimatedArrival());     updated = true; }
+            }
+
+            /* 5) Финализация */
+            if (updated) {
+                f.setLastUpdated(now);
+                flightRepository.save(f);
+                log.info("✈️ Recalc: {} | status={} | delay={} | estDep={} estArr={} | actDep={} actArr={}",
+                        f.getFlightNumber(), f.getStatus(), f.getDelayMinutes(),
+                        f.getEstimatedDeparture(), f.getEstimatedArrival(),
+                        f.getActualDeparture(), f.getActualArrival());
+            }
+        }
+    }
+
+    /** Запуск при старте */
+    @PostConstruct
+    public void runRecalculationOnStartup() {
+        log.info("🚀 Пересчёт рейсов при старте…");
+        recalculateDelayedFlights();
+    }
+
+    /** (опционально) Периодический пересчёт каждые 5 минут */
+    @Scheduled(fixedDelay = 5 * 60 * 1000)
+    public void recalcScheduler() {
+        recalculateDelayedFlights();
+    }
 
     public FlightDto addFlight(FlightDto flightDto) {
         validateFlightDto(flightDto);
