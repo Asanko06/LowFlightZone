@@ -1,12 +1,9 @@
 import React, { createContext, useState, useContext, useEffect } from 'react';
 import { authService } from '../services/auth';
-import api from '../services/api'; // ✅ чтобы автоматически подставлять токен
+import api from '../services/api';
 
 const AuthContext = createContext();
-
-export const useAuth = () => {
-    return useContext(AuthContext);
-};
+export const useAuth = () => useContext(AuthContext);
 
 export const AuthProvider = ({ children }) => {
     const [currentUser, setCurrentUser] = useState(null);
@@ -27,12 +24,16 @@ export const AuthProvider = ({ children }) => {
 
     // 📌 Логин
     const login = async (email, password) => {
+        // ⚠️ Удаляем старый токен перед логином
+        localStorage.removeItem('authToken');
+        delete api.defaults.headers.common['Authorization'];
+
         try {
             const response = await authService.login(email, password);
 
             localStorage.setItem('authToken', response.token);
+            api.defaults.headers.common['Authorization'] = `Bearer ${response.token}`;
 
-            // ✅ Сохраняем весь объект пользователя, а не только email
             setCurrentUser({
                 id: response.id,
                 email: response.email,
@@ -50,10 +51,16 @@ export const AuthProvider = ({ children }) => {
     };
 
     const register = async ({ email, password, firstName, lastName, phoneNumber }) => {
+        // 🧹 очищаем старый токен, если был
+        localStorage.removeItem('authToken');
+        delete api.defaults.headers.common['Authorization'];
+
         try {
             const response = await authService.register({ email, password, firstName, lastName, phoneNumber });
 
+            // ✅ сохраняем токен и пользователя
             localStorage.setItem('authToken', response.token);
+            api.defaults.headers.common['Authorization'] = `Bearer ${response.token}`;
 
             setCurrentUser({
                 id: response.id,
@@ -61,15 +68,39 @@ export const AuthProvider = ({ children }) => {
                 firstName: response.firstName,
                 lastName: response.lastName,
                 phoneNumber: response.phoneNumber,
-                password: response.password,
                 token: response.token
             });
 
             return response;
+
         } catch (error) {
-            throw error;
+            console.error("Ошибка регистрации:", error);
+
+            // 📌 1. Если бэкенд вернул валидированную ошибку
+            if (error.response?.data?.error) {
+                throw new Error(error.response.data.error);
+            }
+
+            // 📌 2. Если Spring вернул стандартное поле `message`
+            if (error.response?.data?.message) {
+                throw new Error(error.response.data.message);
+            }
+
+            // 📌 3. Если HTTP-код 409 (уже зарегистрирован)
+            if (error.response?.status === 409) {
+                throw new Error("Пользователь с таким email уже существует");
+            }
+
+            // 📌 4. Если ошибка сети
+            if (error.message === "Network Error") {
+                throw new Error("Сервер недоступен. Проверьте подключение к интернету.");
+            }
+
+            // 📌 5. Фолбэк — если ничего из вышеперечисленного не подошло
+            throw new Error("Ошибка регистрации. Попробуйте снова позже.");
         }
     };
+
 
     // 📌 Логаут
     const logout = () => {

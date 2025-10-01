@@ -49,12 +49,12 @@ public class UserController {
         return ResponseEntity.ok(user);
     }
 
-    @Operation(summary = "Создать нового пользователя")
-    @PostMapping
-    public ResponseEntity<UserDto> createUser(@RequestBody UserDto userDto) {
-        UserDto newUser = userService.createUser(userDto);
-        return ResponseEntity.ok(newUser);
-    }
+//   @Operation(summary = "Создать нового пользователя")
+//   @PostMapping
+//   public ResponseEntity<UserDto> createUser(@RequestBody UserDto userDto) {
+//       UserDto newUser = userService.createUser(userDto);
+//       return ResponseEntity.ok(newUser);
+//   }
 
     @Operation(summary = "Удалить пользователя")
     @DeleteMapping("/{id}")

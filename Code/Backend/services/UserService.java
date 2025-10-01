@@ -1,6 +1,7 @@
 package com.example.lowflightzone.services;
 
 import com.example.lowflightzone.dao.UserDao;
+import com.example.lowflightzone.dto.AuthRequest;
 import com.example.lowflightzone.dto.UserDto;
 import com.example.lowflightzone.entity.FlightSubscription;
 import com.example.lowflightzone.entity.User;
@@ -8,6 +9,7 @@ import com.example.lowflightzone.exceptions.SubscriptionException;
 import com.example.lowflightzone.exceptions.UserException;
 import com.example.lowflightzone.repositories.FlightSubscriptionRepository;
 import com.example.lowflightzone.repositories.UserRepository;
+import com.google.firebase.auth.UserInfo;
 import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -26,7 +28,8 @@ public class UserService {
     private final FlightSubscriptionService subscriptionService;
 
     @Autowired
-    public UserService(UserDao userDao, UserRepository userRepository, FlightSubscriptionRepository subscriptionRepository, FlightSubscriptionService subscriptionService, PasswordEncoder passwordEncoder) {
+    public UserService(UserDao userDao, UserRepository userRepository, FlightSubscriptionRepository subscriptionRepository,
+                       FlightSubscriptionService subscriptionService, PasswordEncoder passwordEncoder) {
         this.userDao = userDao;
         this.subscriptionRepository = subscriptionRepository;
         this.userRepository = userRepository;
@@ -88,21 +91,34 @@ public class UserService {
         return convertToDto(user);
     }
 
-    public UserDto createUser(UserDto userDto) {
-        if (userDao.existsByEmail(userDto.getEmail())) {
-            throw new UserException("Пользователь с email " + userDto.getEmail() + " уже существует");
+    public User registerUser(AuthRequest request) {
+        if (userRepository.existsByEmail(request.getEmail())) {
+            throw new UserException("Пользователь с таким email уже существует");
         }
 
-        User user = new User();
-        user.setEmail(userDto.getEmail());
-        user.setFirstName(userDto.getFirstName());       // имя
-        user.setLastName(userDto.getLastName());         // фамилия
-        user.setPhoneNumber(userDto.getPhoneNumber());   // телефон
-        user.setDeviceToken(userDto.getDeviceToken());
-        user.setPassword(passwordEncoder.encode(userDto.getPassword())); // хешируем пароль
+        validateCredentials(request.getEmail(), request.getPassword());
 
-        User savedUser = userDao.save(user);
-        return convertToDto(savedUser);
+        User user = new User();
+        user.setEmail(request.getEmail());
+        user.setPassword(passwordEncoder.encode(request.getPassword()));
+        user.setFirstName(request.getFirstName());
+        user.setLastName(request.getLastName());
+        user.setPhoneNumber(request.getPhoneNumber());
+
+        return userRepository.save(user);
+    }
+
+    private void validateCredentials(String email, String password) {
+        if (!email.matches("^[\\w-\\.]+@([\\w-]+\\.)+[\\w-]{2,4}$")) {
+            throw new UserException("Некорректный email");
+        }
+        if (password.length() < 8) {
+            throw new UserException("Пароль должен быть не менее 8 символов");
+        }
+
+        if (!password.matches("^(?=.*[a-z])(?=.*[A-Z])(?=.*[@#$%^&+=!]).{8,}$")) {
+            throw new UserException("Пароль должен содержать заглавную и строчную букву и спецсимвол");
+        }
     }
 
     public void deleteUser(Integer id) {

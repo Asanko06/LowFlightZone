@@ -45,8 +45,10 @@ const LoginPage = () => {
 
     const handleSignUp = async (e) => {
         if (e) e.preventDefault();
+
+        // ✅ Проверяем обязательные поля
         if (!email || !password || !firstName || !lastName || !phoneNumber) {
-            setError('Please fill all fields');
+            setError('Все поля обязательны для заполнения');
             return;
         }
 
@@ -55,23 +57,31 @@ const LoginPage = () => {
 
         try {
             const payload = { email, password, firstName, lastName, phoneNumber };
-            console.log('Attempting registration with:', payload);
+            console.log('📨 Отправка запроса на регистрацию:', payload);
 
+            // 🔥 Регистрируем пользователя
             const response = await register(payload);
-            console.log('Registration response:', response);
+            console.log('✅ Registration response:', response);
 
             if (!response.token) {
-                setError(response.message);
-                setLoading(false);
+                setError(response.message || 'Регистрация прошла неуспешно');
                 return;
             }
 
-            // После успешной регистрации автоматически логинимся
+            // ✅ После успешной регистрации сразу логинимся
             await login(email, password);
             navigate('/');
-        } catch (err) {
-            console.error('Registration error:', err);
-            setError(err.response?.data?.message || 'Registration failed. Please try again.');
+        } catch (error) {
+            console.error('❌ Registration error:', error);
+
+            // 🟢 Если сервер вернул красивую ошибку (например "Пароль должен быть не менее 8 символов")
+            if (error.response?.data?.error) {
+                setError(error.response.data.error);
+            } else if (error.message) {
+                setError(error.message);
+            } else {
+                setError('Ошибка регистрации. Попробуйте снова.');
+            }
         } finally {
             setLoading(false);
         }
@@ -201,7 +211,7 @@ const LoginPage = () => {
                                 disabled={loading}
                                 style={secondaryButtonStyle}
                             >
-                                Don't have an account? Sign up
+                                Sign up
                             </button>
                         </>
                     ) : (
@@ -218,7 +228,7 @@ const LoginPage = () => {
                                 disabled={loading}
                                 style={secondaryButtonStyle}
                             >
-                                Already have an account? Log in
+                                 Log in
                             </button>
                         </>
                     )}
