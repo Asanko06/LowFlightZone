@@ -57,6 +57,7 @@ public class AirportService {
         dto.setLatitude(airport.getLatitude());
         dto.setLongitude(airport.getLongitude());
         dto.setTimezone(airport.getTimezone());
+        dto.setAltitude(airport.getAltitude());
         return dto;
     }
 
@@ -69,6 +70,7 @@ public class AirportService {
         airport.setLatitude(dto.getLatitude());
         airport.setLongitude(dto.getLongitude());
         airport.setTimezone(dto.getTimezone());
+        airport.setAltitude(dto.getAltitude());
         return airport;
     }
 }

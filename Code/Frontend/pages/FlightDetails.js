@@ -68,7 +68,7 @@ const FlightDetails = () => {
             {/* 🛫 Верхний блок с аэропортом */}
             <div style={styles.header}>
                 <h2 style={styles.airportName}>{flight.departureAirport?.name}</h2>
-                <p style={styles.iata}>{flight.departureAirport?.iataCode} • {flight.departureAirport?.city}</p>
+                <p style={styles.iata}>{flight.departureAirport?.iataCode} Elev. {flight.departureAirport?.altitude}ft</p>
             </div>
 
             {/* 🗺️ Схема терминала */}

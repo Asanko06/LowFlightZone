@@ -15,4 +15,5 @@ public class AirportDto {
     private Double latitude;
     private Double longitude;
     private String timezone;
+    private Integer altitude;
 }

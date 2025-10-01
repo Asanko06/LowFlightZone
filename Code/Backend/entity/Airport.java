@@ -25,6 +25,9 @@ public class Airport {
     @Column(name = "country")
     private String country;
 
+    @Column(name = "altitude")
+    private Integer altitude; // высота над уровнем моря в метрах
+
     @Column(name = "latitude")
     private Double latitude;
 
