@@ -223,6 +223,8 @@ public class FlightService {
             departureDto.setCity(flight.getDepartureAirport().getCity());
             departureDto.setCountry(flight.getDepartureAirport().getCountry());
             departureDto.setAltitude(flight.getDepartureAirport().getAltitude());
+            departureDto.setLatitude(flight.getDepartureAirport().getLatitude());
+            departureDto.setLongitude(flight.getDepartureAirport().getLongitude());
             flightDto.setDepartureAirport(departureDto);
         }
 
@@ -233,6 +235,8 @@ public class FlightService {
             arrivalDto.setCity(flight.getArrivalAirport().getCity());
             arrivalDto.setCountry(flight.getArrivalAirport().getCountry());
             arrivalDto.setAltitude(flight.getDepartureAirport().getAltitude());
+            arrivalDto.setLatitude(flight.getArrivalAirport().getLatitude());
+            arrivalDto.setLongitude(flight.getArrivalAirport().getLongitude());
             flightDto.setArrivalAirport(arrivalDto);
         }
 
@@ -295,6 +299,8 @@ public class FlightService {
             dep.setCity(flight.getDepartureAirport().getCity());
             dep.setCountry(flight.getDepartureAirport().getCountry());
             dep.setAltitude(flight.getDepartureAirport().getAltitude());
+            dep.setLongitude(flight.getDepartureAirport().getLongitude());
+            dep.setLatitude(flight.getDepartureAirport().getLatitude());
             dto.setDepartureAirport(dep);
         }
 
@@ -305,6 +311,8 @@ public class FlightService {
             arr.setCity(flight.getArrivalAirport().getCity());
             arr.setCountry(flight.getArrivalAirport().getCountry());
             arr.setAltitude(flight.getDepartureAirport().getAltitude());
+            arr.setLatitude(flight.getArrivalAirport().getLatitude());
+            arr.setLongitude(flight.getArrivalAirport().getLongitude());
             dto.setArrivalAirport(arr);
         }
 
