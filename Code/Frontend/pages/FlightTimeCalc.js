@@ -212,7 +212,7 @@ const FlightTimeCalc = () => {
     if (error) return <div style={s.error}>{error}</div>;
     if (!flight) return <div style={s.error}>Рейс не найден</div>;
 
-    const titleLine = `${flight?.departureAirport?.city || ""} (${flight?.departureAirport?.iataCode || ""}) → ${flight?.arrivalAirport?.city || ""} (${flight?.arrivalAirport?.iataCode || ""}) — ${flight?.flightNumber || ""}`;
+    const titleLine = `${flight?.departureAirport?.city || ""} (${flight?.departureAirport?.iataCode || ""}) → ${flight?.arrivalAirport?.city || ""} (${flight?.arrivalAirport?.iataCode || ""}) ( ${flight?.flightNumber || ""})`;
 
     /* -------------------- Рендер -------------------- */
     return (
