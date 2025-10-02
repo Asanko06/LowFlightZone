@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
-import Header from './components/common/Header';
+import Header from './components/layout/Header';
 import Home from './pages/Home';
 import Flights from './pages/Flights';
 import Subscriptions from './pages/Subscriptions';

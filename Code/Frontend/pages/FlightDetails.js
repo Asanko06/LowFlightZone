@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import api from "../services/api";
 import terminalImage from "../assets/terminal.png";
+import "../styles/FlightDetails.css";
 
 const FlightDetails = () => {
     const { flightId } = useParams();
@@ -30,7 +31,6 @@ const FlightDetails = () => {
 
     const getBoardingTimeInfo = () => {
         if (!flight?.scheduledDeparture) return null;
-
         const boardingEnd = new Date(flight.scheduledDeparture);
         const now = new Date();
         const diffMinutes = Math.floor((boardingEnd - now) / 60000);
@@ -46,9 +46,9 @@ const FlightDetails = () => {
         return new Date(new Date(date).getTime() + delayMinutes * 60000);
     };
 
-    if (loading) return <div style={styles.loading}>Загрузка...</div>;
-    if (error) return <div style={styles.error}>{error}</div>;
-    if (!flight) return <div style={styles.error}>Рейс не найден</div>;
+    if (loading) return <div className="loading">Загрузка...</div>;
+    if (error) return <div className="error">{error}</div>;
+    if (!flight) return <div className="error">Рейс не найден</div>;
 
     const cancelled = flight.status?.toLowerCase() === "cancelled";
     const arrived = flight.status?.toLowerCase() === "arrived";
@@ -64,128 +64,122 @@ const FlightDetails = () => {
         : flight.actualArrival;
 
     return (
-        <div style={styles.container}>
-            {/* 🛫 Верхний блок с аэропортом */}
-            <div style={styles.header}>
-                <h2 style={styles.airportName}>{flight.departureAirport?.name}</h2>
-                <p style={styles.iata}>{flight.departureAirport?.iataCode} Elev. {flight.departureAirport?.altitude}ft</p>
+        <div className="flight-container">
+            {/* 🛫 Верхний блок */}
+            <div className="flight-header">
+                <h2>{flight.departureAirport?.name}</h2>
+                <p>{flight.departureAirport?.iataCode} Elev. {flight.departureAirport?.altitude}ft</p>
             </div>
 
-            {/* 🗺️ Схема терминала */}
-            <div style={styles.imageWrapper}>
-                <img src={terminalImage} alt="Terminal map" style={styles.terminalImage} />
-            </div>
+            {/* 📦 Контейнер с данными и картинкой */}
+            <div className="details-layout">
+                <div className="details-left">
+                    {/* 🗺️ Схема терминала (на мобилке — будет тут) */}
+                    <div className="terminal-mobile">
+                        <img src={terminalImage} alt="Terminal map" className="terminal-image" />
+                    </div>
 
-            {/* ✈️ Город прибытия и номер рейса */}
-            <div style={styles.routeBlock}>
-                <h3>{flight.arrivalAirport?.city} ({flight.flightNumber})</h3>
-                <button style={styles.toggleButton} onClick={() => setExpanded(!expanded)}>
-                    {expanded ? "▲" : "▼"}
-                </button>
-            </div>
+                    {/* ✈️ Информация о рейсе */}
+                    <div className="route-block">
+                        <h3>{flight.arrivalAirport?.city} ({flight.flightNumber})</h3>
+                        <button className="toggle-button" onClick={() => setExpanded(!expanded)}>
+                            {expanded ? "▲" : "▼"}
+                        </button>
+                    </div>
 
-            {/* 📊 Таблица */}
-            {expanded && (
-                <div style={styles.table}>
-                    {!cancelled ? (
-                        <>
-                            <div style={styles.row}>
-                                <div style={{ ...styles.cell, ...styles.withRightBorder }}>
-                                    <strong>По расписанию вылет:</strong>
-                                    <div>{formatDate(flight.scheduledDeparture)}</div>
-                                </div>
-                                <div style={styles.cell}>
-                                    <strong>Фактический вылет:</strong>
-                                    <div>
-                                        {arrived
-                                            ? delayed
-                                                ? formatDate(adjustedDeparture)
-                                                : "—"
-                                            : adjustedDeparture
-                                                ? formatDate(adjustedDeparture)
-                                                : "—"}
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div style={styles.row}>
-                                <div style={{ ...styles.cell, ...styles.withRightBorder }}>
-                                    <strong>По расписанию прибытие:</strong>
-                                    <div>{formatDate(flight.scheduledArrival)}</div>
-                                </div>
-                                <div style={styles.cell}>
-                                    <strong>Фактическое прибытие:</strong>
-                                    <div>
-                                        {arrived
-                                            ? delayed
-                                                ? formatDate(adjustedArrival)
-                                                : "—"
-                                            : adjustedArrival
-                                                ? formatDate(adjustedArrival)
-                                                : "—"}
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div style={styles.row}>
-                                <div style={{ ...styles.cell, flex: 1 }}>
-                                    <strong>Статус рейса:</strong>
-                                    <div>{flight.status || "—"}</div>
-                                    {delayed && (
-                                        <div style={{ color: "orange", marginTop: "0.3rem" }}>
-                                            Задержка: {flight.delayMinutes} мин
+                    {/* 📊 Таблица */}
+                    {expanded && (
+                        <div className="table">
+                            {!cancelled ? (
+                                <>
+                                    <div className="row">
+                                        <div className="cell with-border">
+                                            <strong>По расписанию вылет:</strong>
+                                            <div>{formatDate(flight.scheduledDeparture)}</div>
                                         </div>
-                                    )}
-                                </div>
-                            </div>
+                                        <div className="cell">
+                                            <strong>Фактический вылет:</strong>
+                                            <div>
+                                                {arrived
+                                                    ? delayed
+                                                        ? formatDate(adjustedDeparture)
+                                                        : "—"
+                                                    : adjustedDeparture
+                                                        ? formatDate(adjustedDeparture)
+                                                        : "—"}
+                                            </div>
+                                        </div>
+                                    </div>
 
-                            <div style={styles.row}>
-                                <div style={{ ...styles.cell, ...styles.withRightBorder }}>
-                                    <strong>Авиакомпания:</strong>
-                                    <div>{flight.airline}</div>
-                                </div>
-                                <div style={styles.cell}>
-                                    <strong>Рейс №:</strong>
-                                    <div>{flight.flightNumber}</div>
-                                </div>
-                            </div>
-                        </>
-                    ) : (
-                        <div style={styles.cancelledBlock}>
-                            🛑 Рейс отменён. Данные недоступны.
+                                    <div className="row">
+                                        <div className="cell with-border">
+                                            <strong>По расписанию прибытие:</strong>
+                                            <div>{formatDate(flight.scheduledArrival)}</div>
+                                        </div>
+                                        <div className="cell">
+                                            <strong>Фактическое прибытие:</strong>
+                                            <div>
+                                                {arrived
+                                                    ? delayed
+                                                        ? formatDate(adjustedArrival)
+                                                        : "—"
+                                                    : adjustedArrival
+                                                        ? formatDate(adjustedArrival)
+                                                        : "—"}
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div className="row">
+                                        <div className="cell">
+                                            <strong>Статус рейса:</strong>
+                                            <div>{flight.status || "—"}</div>
+                                            {delayed && (
+                                                <div className="delay-text">
+                                                    Задержка: {flight.delayMinutes} мин
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+
+                                    <div className="row">
+                                        <div className="cell with-border">
+                                            <strong>Авиакомпания:</strong>
+                                            <div>{flight.airline}</div>
+                                        </div>
+                                        <div className="cell">
+                                            <strong>Рейс №:</strong>
+                                            <div>{flight.flightNumber}</div>
+                                        </div>
+                                    </div>
+                                </>
+                            ) : (
+                                <div className="cancelled-block">🛑 Рейс отменён. Данные недоступны.</div>
+                            )}
                         </div>
                     )}
-                </div>
-            )}
 
-            {/* 🛫 Гейт */}
-            {!cancelled && !arrived && (
-                <div style={styles.gateBlock}>
-                    Посадка на рейс из гейта {flight.gate || "—"}
-                </div>
-            )}
+                    {!cancelled && !arrived && (
+                        <div className="gate-block">Посадка на рейс из гейта {flight.gate || "—"}</div>
+                    )}
 
-            {/* ⏱️ Оставшееся время */}
-            {!cancelled && !arrived && boardingInfo && (
-                <div style={{ ...styles.boardingTime, color: boardingInfo.color }}>
-                    {boardingInfo.text}
-                </div>
-            )}
+                    {!cancelled && !arrived && boardingInfo && (
+                        <div className="boarding-time" style={{ color: boardingInfo.color }}>
+                            {boardingInfo.text}
+                        </div>
+                    )}
 
-            {/* 🛬 Если рейс прибыл */}
-            {arrived && (
-                <div style={styles.completedFooter}>
-                    ✈️ Посадка завершена — рейс прибыл.
-                </div>
-            )}
+                    {arrived && <div className="completed-footer">✈️ Посадка завершена — рейс прибыл.</div>}
+                    {cancelled && <div className="cancelled-footer">✈️ Рейс отменён — посадка не производится.</div>}
 
-            {cancelled && (
-                <div style={styles.cancelledFooter}>
-                    ✈️ Рейс отменён — посадка не производится.
+                    <button className="back-button" onClick={() => navigate(-1)}>← Назад</button>
                 </div>
-            )}
 
-            <button onClick={() => navigate(-1)} style={styles.backButton}>← Назад</button>
+                {/* 🖥️ Картинка сбоку (появляется только на ПК) */}
+                <div className="details-right">
+                    <img src={terminalImage} alt="Terminal map" className="terminal-image" />
+                </div>
+            </div>
         </div>
     );
 };
@@ -198,53 +192,6 @@ const formatDate = (date) => {
         hour: "2-digit",
         minute: "2-digit",
     });
-};
-
-const styles = {
-    container: { maxWidth: "600px", margin: "0 auto", padding: "1rem" },
-    header: { backgroundColor: "#7EBFFF", padding: "1rem", borderRadius: "8px" },
-    airportName: { margin: 0, fontSize: "1.5rem" },
-    iata: { margin: 0, color: "#555" },
-    imageWrapper: { textAlign: "center", margin: "1rem 0" },
-    terminalImage: { width: "100%", maxWidth: "500px", borderRadius: "8px" },
-    routeBlock: { backgroundColor: "#7EBFFF", padding: "1rem", display: "flex", justifyContent: "space-between", alignItems: "center" },
-    toggleButton: { background: "none", border: "none", fontSize: "1.2rem", cursor: "pointer" },
-
-    table: {
-        marginTop: "1rem",
-        fontSize: "0.95rem",
-        lineHeight: "1.8",
-        border: "1px solid #d0d7de",
-        borderRadius: "8px",
-        overflow: "hidden",
-        backgroundColor: "#fdfdfd",
-    },
-    row: {
-        display: "flex",
-        justifyContent: "space-between",
-        padding: "0.8rem 1rem",
-        borderBottom: "1px solid #e0e0e0",
-    },
-    cell: {
-        flex: 1,
-        display: "flex",
-        flexDirection: "column",
-        paddingRight: "1rem",
-    },
-    withRightBorder: {
-        borderRight: "1px solid #d0d7de",
-        paddingRight: "1.5rem",
-        marginRight: "1.5rem",
-    },
-
-    cancelledBlock: { textAlign: "center", padding: "2rem 1rem", backgroundColor: "#ffe6e6", color: "red", fontWeight: "bold", borderRadius: "8px" },
-    gateBlock: { backgroundColor: "#7EBFFF", padding: "1rem", textAlign: "center", borderRadius: "8px", marginTop: "1rem", fontWeight: "bold" },
-    boardingTime: { marginTop: "0.8rem", textAlign: "center", fontSize: "1.1rem" },
-    completedFooter: { marginTop: "1rem", textAlign: "center", color: "green", fontWeight: "bold" },
-    cancelledFooter: { marginTop: "1rem", textAlign: "center", color: "red", fontWeight: "bold" },
-    loading: { textAlign: "center", marginTop: "2rem" },
-    error: { textAlign: "center", color: "red", marginTop: "2rem" },
-    backButton: { marginTop: "2rem", backgroundColor: "#7EBFFF", border: "none", padding: "0.7rem 1.2rem", borderRadius: "8px", cursor: "pointer" }
 };
 
 export default FlightDetails;
